@@ -1,0 +1,65 @@
+```mermaid
+erDiagram
+    Ruta ||--|{ Estacion: "Tiene"
+    Estacion ||--|{ Casilla_Estacion: "Esta"
+    Casilla_Estacion ||--|{ TurnoTrabajo: " "
+    Operador ||--o{ TurnoTrabajo: " "
+    SentidoCasilla ||--|{ TurnoTrabajo: " "
+    Casilla_Estacion ||--o{ Venta: "Fue en"
+    Venta }o--|| CategoriaVehiculo: "Es"
+    Venta }o--|| TarifaActual: "Costó"
+
+
+    Ruta{
+        int COD_Ruta Pk
+        str Nombre
+    }
+    Estacion{
+        int COD_Estacion Pk
+        int COD_Ruta Fk
+        str Nombre
+    }
+    SentidoCasilla{
+        int COD_SentidoCasilla Pk
+        str Nombre
+    }
+    Casilla_Estacion{
+        int COD_Casilla Pk
+        int COD_Estacion Fk
+    }
+    TurnoTrabajo{
+        int COD_Turno Pk
+        int COD_Casilla Fk
+        int COD_Operador Fk
+        int COD_SentidoCasilla Fk
+        int MontoEntregado
+        date FechaTurno
+        dateTime Ingreso
+        dateTime Salida
+    }
+    Operador{
+        int COD_Operador Pk
+        str Nombre 
+        str Apellido
+        str Telefono
+        int DNI
+    }
+    Venta{
+        int COD_Venta Pk
+        int COD_Casilla Fk
+        int CategoriaVehiculo Fk
+        int TarifaActual Fk
+        int Patente
+        date Fecha_Venta
+        dateTime Hora_Venta
+    }
+    CategoriaVehiculo{
+        int CategoriaVehiculo Pk
+        str Nombre
+    }
+    TarifaActual{
+        int COD_Tarifa Pk
+        int CategoriaVehiculo Fk
+        int MontoActual
+    }
+```

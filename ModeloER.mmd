@@ -1,0 +1,59 @@
+erDiagram
+    Ruta ||--|{ Estacion : "tiene"
+    Estacion ||--|{ Casilla : "posee"
+    Casilla ||--o{ Turno : "asigna"
+    Operador ||--o{ Turno : "trabaja"
+    Turno ||--o{ Venta : "genera"
+    CategoriaVehiculo ||--|{ Tarifa : "tiene"
+    Tarifa ||--o{ Venta : "aplica"
+
+    Ruta {
+        int id_ruta PK
+        str nombre
+    }
+    Estacion {
+        int id_estacion PK
+        int id_ruta FK
+        str nombre
+        int numero_estacion
+        decimal kilometro
+    }
+    Casilla {
+        int id_casilla PK
+        int id_estacion FK
+        int numero_casilla
+    }
+    Operador {
+        int legajo PK
+        str nombre
+        str apellido
+    }
+    Turno {
+        int id_turno PK
+        int id_casilla FK
+        int legajo_operador FK
+        str sentido_cobro
+        decimal monto_cambio_inicial
+        dateTime inicio_programado
+        dateTime fin_programado
+        dateTime fecha_hora_apertura
+        dateTime fecha_hora_cierre
+    }
+    CategoriaVehiculo {
+        int id_categoria PK
+        str nombre
+    }
+    Tarifa {
+        int id_tarifa PK
+        int id_categoria FK
+        decimal monto
+        date vigente_desde
+        date vigente_hasta
+    }
+    Venta {
+        int numero_ticket PK
+        int id_turno FK
+        int id_tarifa FK
+        dateTime fecha_hora_emision
+        decimal importe_cobrado
+    }
