@@ -1,0 +1,16 @@
+entornito/
+.venv/
+venv/
+__pycache__/
+
+Ej_API/
+
+Caso_prode.mmd
+Ej_7.mmd
+Peaje.png
+data.json
+index.html
+monsters.html
+spells.html
+
+*.pyc
