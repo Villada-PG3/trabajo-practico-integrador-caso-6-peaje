@@ -1,0 +1,50 @@
+erDiagram
+    Estacion{
+    int idEstacion PK
+    str nombre
+    int numeroEstacion
+    str ruta
+    int kilometro
+    }
+    Casilla_Peaje{
+    int idCasilla PK
+    int numeroCasilla
+    }
+    Operador{
+    int legajo PK
+    str nombre
+    str apellido
+    }
+    TurnoTrabajo{
+    int idTurno PK
+    date fechaHoraInicioProgramada
+    date fechaHoraFinProgramada
+    date fechaHoraApertura
+    date fechaHoraCierre
+    str sentidoCobro
+    int montoCambioInicial
+    }
+    Tarifa{
+    int idTarifa PK
+    int importe
+    date fechaDesde
+    date fechaHasta
+    }
+
+    Categoría{
+    int idCategoria PK
+    str nombreCategoria
+    }
+    CobroPeaje{
+        str id_Cobro PK
+        date FechaHoraCobro
+        int importeCobrado
+    }
+
+    Estacion ||--|{ Casilla_Peaje : ""
+    Casilla_Peaje ||--|{ TurnoTrabajo : ""
+    Operador ||--|{ TurnoTrabajo : ""
+    TurnoTrabajo ||--|{ CobroPeaje : ""
+    Categoría ||--|{ CobroPeaje : ""
+    Tarifa ||--|{ CobroPeaje : ""
+    Categoría ||--|{ Tarifa : ""
