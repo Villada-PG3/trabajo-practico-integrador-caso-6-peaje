@@ -1,0 +1,60 @@
+erDiagram
+    ESTACION ||--o{ CASILLA :""
+    CASILLA ||--o{ TURNO_TRABAJO :""
+    OPERADOR ||--o{ TURNO_TRABAJO : ""
+    TURNO_TRABAJO ||--o{ TICKET : ""
+    CATEGORIA_VEHICULO ||--o{ TARIFA : ""
+    TARIFA ||--o{ TICKET : ""
+
+    ESTACION {
+        int id_estacion PK 
+        str nombre 
+        str ruta 
+        float kilometro 
+    }
+
+    CASILLA {
+        int id_casilla PK 
+        int id_estacion FK 
+        int numero_casilla 
+        str sistema_operativo 
+    }
+
+    OPERADOR {
+        int legajo PK 
+        str nombre_completo 
+        datetime fecha_nacimiento 
+    }
+
+    TURNO_TRABAJO {
+        int id_turno PK 
+        int id_casilla FK 
+        int legajo_operador FK 
+        datetime fecha_hora_apertura 
+        datetime fecha_hora_cierre 
+        float monto_cambio_inicial 
+        str sentido_cobro 
+    }
+
+    CATEGORIA_VEHICULO {
+        int id_categoria PK 
+        str nombre 
+        str detalle_tecnico 
+    }
+
+    TARIFA {
+        int id_tarifa PK 
+        int id_categoria FK 
+        float importe_establecido 
+        datetime fecha_vigencia_desde 
+        str instrumento_legal 
+    }
+
+    TICKET {
+        int numero_ticket PK 
+        int id_turno FK 
+        int id_tarifa FK 
+        datetime fecha_hora_emision 
+        float importe_cobrado 
+        str codigo_qr 
+    }
