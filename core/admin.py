@@ -1,7 +1,5 @@
-from django.contrib import admin
-
 # Register your models here.
-# ventas/admin.py
+from django.contrib import admin
 from .models import CategoriaVehiculo, Tarifa, Venta
 
 admin.site.register(CategoriaVehiculo)

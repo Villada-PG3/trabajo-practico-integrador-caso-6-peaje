@@ -1,0 +1,18 @@
+[
+  {"model": "core.categoriavehiculo", "pk": 1, "fields": {"nombre": "Motocicletas"}},
+  {"model": "core.categoriavehiculo", "pk": 2, "fields": {"nombre": "Automóviles"}},
+  {"model": "core.categoriavehiculo", "pk": 3, "fields": {"nombre": "2 ejes, ruedas duales o altura mayor a 2,10m"}},
+  {"model": "core.categoriavehiculo", "pk": 4, "fields": {"nombre": "3 o 4 ejes, sin ruedas duales, altura menor a 2,10m"}},
+  {"model": "core.categoriavehiculo", "pk": 5, "fields": {"nombre": "3 o 4 ejes, con ruedas duales o altura mayor a 2,10m"}},
+  {"model": "core.categoriavehiculo", "pk": 6, "fields": {"nombre": "5 o 6 ejes"}},
+  {"model": "core.categoriavehiculo", "pk": 7, "fields": {"nombre": "Más de 6 ejes"}},
+
+  {"model": "core.tarifa", "pk": 1, "fields": {"categoria": 1, "monto": "45.00",  "vigente_desde": "2026-01-01", "vigente_hasta": null}},
+  {"model": "core.tarifa", "pk": 2, "fields": {"categoria": 2, "monto": "90.00",  "vigente_desde": "2026-01-01", "vigente_hasta": null}},
+  {"model": "core.tarifa", "pk": 3, "fields": {"categoria": 3, "monto": "180.00", "vigente_desde": "2026-01-01", "vigente_hasta": null}},
+
+  {"model": "core.tarifa", "pk": 4, "fields": {"categoria": 4, "monto": "180.00", "vigente_desde": "2026-01-01", "vigente_hasta": null}},
+  {"model": "core.tarifa", "pk": 5, "fields": {"categoria": 5, "monto": "270.00", "vigente_desde": "2026-01-01", "vigente_hasta": null}},
+  {"model": "core.tarifa", "pk": 6, "fields": {"categoria": 6, "monto": "360.00", "vigente_desde": "2026-01-01", "vigente_hasta": null}},
+  {"model": "core.tarifa", "pk": 7, "fields": {"categoria": 7, "monto": "450.00", "vigente_desde": "2026-01-01", "vigente_hasta": null}}
+]
