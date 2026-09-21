@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="es">
+<body style="font-family:sans-serif; padding:40px;">
+  <h1>¡Ingreso exitoso!</h1>
+  <p>Hola {{ request.user.nombre }} {{ request.user.apellido }} (legajo {{ request.user.legajo }})</p>
+  <p>Administrador: {{ request.user.es_administrador }}</p>
+</body>
+</html>
