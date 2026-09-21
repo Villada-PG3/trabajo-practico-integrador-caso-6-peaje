@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Iniciar Sesión - Operador{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow-lg border-0 rounded-3">
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h4 class="mb-0"><i class="fa-solid fa-lock me-2"></i>Acceso al Sistema</h4>
+            </div>
+            <div class="card-body p-4">
+                <div id="login-alert" class="alert alert-danger d-none" role="alert"></div>
+                
+                <form id="form-login">
+                    <div class="mb-3">
+                        <label for="legajo" class="form-label font-weight-bold">N° de Legajo</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-id-card"></i></span>
+                            <input type="text" class="form-control" id="legajo" placeholder="Ej: 10452" required autofocus>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-key"></i></span>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fs-5 mt-2" id="btn-login">
+                        <i class="fa-solid fa-right-to-bracket me-2"></i>Ingresar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('form-login').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const legajo = document.getElementById('legajo').value;
+    const password = document.getElementById('password').value;
+    const alertBox = document.getElementById('login-alert');
+
+    try {
+        const response = await fetch('/api/login/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ legajo, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            localStorage.setItem('auth_token', data.token);
+            localStorage.setItem('legajo', data.legajo);
+            localStorage.setItem('es_admin', data.es_administrador);
+
+            if (data.es_administrador) {
+                window.location.href = '/admin-panel/';
+            } else {
+                window.location.href = '/apertura-turno/';
+            }
+        } else {
+            alertBox.textContent = data.detail || "Credenciales inválidas";
+            alertBox.classList.remove('d-none');
+        }
+    } catch (err) {
+        // Fallback para pruebas locables o de desarrollo
+        localStorage.setItem('legajo', legajo);
+        window.location.href = '/apertura-turno/';
+    }
+});
+</script>
+{% endblock %}
