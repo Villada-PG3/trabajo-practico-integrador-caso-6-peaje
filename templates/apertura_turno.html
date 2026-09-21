@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Apertura de Turno{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="fa-solid fa-door-open me-2"></i>Apertura de Turno y Caja</h4>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted">Ingrese los datos correspondientes para habilitar la casilla de cobro.</p>
+                
+                <form id="form-apertura">
+                    <div class="mb-3">
+                        <label for="casilla-select" class="form-label">Casilla Asignada</label>
+                        <select class="form-select" id="casilla-select" required>
+                            <option value="1">Casilla 01 (Vía Rápida)</option>
+                            <option value="2">Casilla 02 (Manual / Efectivo)</option>
+                            <option value="3">Casilla 03 (Efectivo / Telepase)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="sentido" class="form-label">Sentido de Cobro</label>
+                        <select class="form-select" id="sentido" required>
+                            <option value="Norte-Sur">Norte -> Sur (Hacia Córdoba)</option>
+                            <option value="Sur-Norte">Sur -> Norte (Hacia Carlos Paz)</option>
+                            <option value="Este-Oeste">Este -> Oeste</option>
+                            <option value="Oeste-Este">Oeste -> Este</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="monto-inicial" class="form-label">Monto de Cambio Inicial ($)</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text">$</span>
+                            <input type="number" step="0.01" class="form-control" id="monto-inicial" value="5000.00" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-lg w-100">
+                        <i class="fa-solid fa-play me-2"></i> Iniciar Turno de Cobro
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('form-apertura').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const casilla = document.getElementById('casilla-select').value;
+    const sentido = document.getElementById('sentido').value;
+    const cambioInicial = document.getElementById('monto-inicial').value;
+
+    const turnoData = {
+        casilla_id: casilla,
+        sentido: sentido,
+        monto_cambio_inicial: cambioInicial,
+        fecha_hora_apertura: new Date().toISOString()
+    };
+
+    localStorage.setItem('turno_actual', JSON.stringify(turnoData));
+
+    try {
+        await fetch('/api/turnos/abrir/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('auth_token')
+            },
+            body: JSON.stringify(turnoData)
+        });
+    } catch(e) {
+        console.warn("API de turno offline, usando datos locales");
+    }
+
+    window.location.href = '/cobro/';
+});
+</script>
+{% endblock %}
