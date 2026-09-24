@@ -41,40 +41,55 @@
 
 {% block extra_js %}
 <script>
+
 document.getElementById('form-login').addEventListener('submit', async function(e) {
+
     e.preventDefault();
+
     const legajo = document.getElementById('legajo').value;
     const password = document.getElementById('password').value;
-    const alertBox = document.getElementById('login-alert');
 
     try {
+
         const response = await fetch('/api/login/', {
+
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ legajo, password })
+
+            headers: {
+                'Content-Type': 'application/json'
+            },
+
+            body: JSON.stringify({
+                legajo,
+                password
+            })
+
         });
 
         const data = await response.json();
 
         if (response.ok) {
-            localStorage.setItem('auth_token', data.token);
+
             localStorage.setItem('legajo', data.legajo);
             localStorage.setItem('es_admin', data.es_administrador);
 
-            if (data.es_administrador) {
-                window.location.href = '/admin-panel/';
-            } else {
-                window.location.href = '/apertura-turno/';
-            }
+            // Usuario y contraseña correctos
+            window.location.href = '/prueba/';
+
         } else {
-            alertBox.textContent = data.detail || "Credenciales inválidas";
-            alertBox.classList.remove('d-none');
+
+            // Usuario o contraseña incorrectos
+            window.location.href = '/apertura-turno/';
+
         }
+
     } catch (err) {
-        // Fallback para pruebas locables o de desarrollo
-        localStorage.setItem('legajo', legajo);
-        window.location.href = '/apertura-turno/';
+
+        console.error("Error al intentar iniciar sesión:", err);
+
     }
+
 });
 </script>
+
 {% endblock %}
