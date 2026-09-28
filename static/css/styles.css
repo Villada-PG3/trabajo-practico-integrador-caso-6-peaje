@@ -39,20 +39,6 @@ body {
     color: #198754;
 }
 
-/* Recuadro sobre puesto en cámara webcam */
-.plate-box-overlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 70%;
-    height: 35%;
-    border: 3px dashed #ffc107;
-    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
-    pointer-events: none;
-    border-radius: 6px;
-}
-
 /* Diseño del Ticket Físico */
 .ticket-receipt {
     font-family: 'Courier New', Courier, monospace;
