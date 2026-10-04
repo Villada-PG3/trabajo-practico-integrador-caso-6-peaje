@@ -4,6 +4,8 @@ from rest_framework.decorators import api_view
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import user_passes_test
+from .models import Operador
 
 
 # Decorador que exime a esta función de validar el token CSRF (necesario cuando se reciben peticiones desde un cliente API como fetch)
@@ -38,6 +40,9 @@ def api_login_view(request): # Define la función de la vista para manejar el in
         # Retorna un mensaje indicando "Credenciales inválidas" con el código de estado HTTP 401 (No autorizado)
         return JsonResponse({"detail": "Credenciales inválidas"}, status=401)
 
+    # Crea la sesión: sin esto Django ve al usuario como anónimo y el paso 2 devuelve 403
+    auth_login(request, operador)
+
     # Si la autenticación fue exitosa, retorna una respuesta JSON con el código de estado 200 (OK por defecto)
     return JsonResponse(
         {
@@ -67,3 +72,38 @@ def cierre_caja_view(request):
 def prueba(request):
     """Vista de prueba para desarrollo y testing."""
     return render(request, 'prueba.html')
+   
+def crear_usuario(request):
+    """Vista para crear un nuevo usuario (operador)."""
+    return render(request, 'panel/crear_usuario.html')
+
+@csrf_exempt
+def api_operadores_view(request):
+    # Solo se acepta POST (el formulario manda los datos así)
+    if request.method != "POST":
+        return JsonResponse({"detail": "Método no permitido"}, status=405)
+
+    # Solo un administrador logueado puede crear usuarios
+    if not (request.user.is_authenticated and request.user.es_administrador):
+        return JsonResponse({"detail": "No autorizado"}, status=403)
+
+    # Lee el JSON que manda el formulario
+    try:
+        data = json.loads(request.body)
+        legajo = int(data.get("legajo"))
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return JsonResponse({"detail": "Datos inválidos"}, status=400)
+
+    # El legajo es la clave primaria: no puede repetirse
+    if Operador.objects.filter(legajo=legajo).exists():
+        return JsonResponse({"detail": "Ya existe ese legajo"}, status=400)
+
+    # create_user guarda la contraseña encriptada
+    Operador.objects.create_user(
+        legajo=legajo,
+        password=data.get("password"),
+        nombre=data.get("nombre"),
+        apellido=data.get("apellido"),
+        es_administrador=data.get("es_administrador", False),
+    )
+    return JsonResponse({"legajo": legajo}, status=201)

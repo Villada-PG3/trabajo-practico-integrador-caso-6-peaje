@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Crear Usuario{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+
+        <a href="/prueba/" class="text-decoration-none">&larr; Volver al panel</a>
+
+        <div class="card shadow-sm border-0 mt-3">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="fa-solid fa-user-plus me-2"></i>Crear Usuario</h4>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted">Completá los datos del nuevo empleado.</p>
+
+                {# Acá se muestra el resultado (éxito o error). Empieza oculto #}
+                <div id="mensaje" class="d-none"></div>
+
+                <form id="form-usuario">
+                    <div class="mb-3">
+                        <label for="legajo" class="form-label">Legajo</label>
+                        <input type="number" class="form-control" id="legajo" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="nombre" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="apellido" class="form-label">Apellido</label>
+                        <input type="text" class="form-control" id="apellido" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" id="password" required>
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input type="checkbox" class="form-check-input" id="es_administrador">
+                        <label for="es_administrador" class="form-check-label">Es administrador</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-lg w-100">
+                        <i class="fa-solid fa-floppy-disk me-2"></i> Crear usuario
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('form-usuario').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const mensaje = document.getElementById('mensaje');
+
+    const datos = {
+        legajo: document.getElementById('legajo').value,
+        nombre: document.getElementById('nombre').value,
+        apellido: document.getElementById('apellido').value,
+        password: document.getElementById('password').value,
+        es_administrador: document.getElementById('es_administrador').checked
+    };
+
+    try {
+        const resp = await fetch('/api/operadores/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datos)
+        });
+
+        if (resp.ok) {
+            mensaje.className = 'alert alert-success';
+            mensaje.textContent = 'Usuario creado correctamente.';
+            this.reset();
+        } else {
+            mensaje.className = 'alert alert-danger';
+            mensaje.textContent = 'No se pudo crear el usuario.';
+        }
+    } catch (err) {
+        mensaje.className = 'alert alert-danger';
+        mensaje.textContent = 'No hay conexión con el servidor.';
+    }
+});
+</script>
+{% endblock %}

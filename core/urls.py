@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from django.views.generic import RedirectView
 
 urlpatterns = [
 
@@ -17,4 +18,12 @@ urlpatterns = [
     # Procesa usuario y contraseña
     path('api/login/', views.api_login_view, name='api-login'),
 
+    # Si alguien entra a la raíz del sitio, lo mandamos a la ruta llamada 'login'
+    path('', RedirectView.as_view(pattern_name='login'), name='raiz'),
+
+    #procesa el panel de crear usuario
+    path('panel/crear-usuario/', views.crear_usuario, name='crear_usuario'),
+
+    #procesa la creación de un nuevo usuario (operador) vía API
+    path('api/operadores/', views.api_operadores_view, name='api-operadores'),
 ]
