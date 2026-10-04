@@ -1,18 +1,49 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Sistema de Peaje{% endblock %}</title>
+{% extends 'base.html' %}
 
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- FontAwesome para íconos -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    {% load static %}
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    
-    {% block extra_head %}{% endblock %}
-</head>
-<h1>Hello World</h1>
+{% block title %}Panel de Administración{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-1">Panel de Administración</h1>
+<p class="text-muted mb-4">Elegí qué querés hacer.</p>
+
+<div class="row row-cols-1 row-cols-md-3 g-4">
+
+    {# Opción activa #}
+    <div class="col">
+        <a href="/panel/crear-usuario/" class="text-decoration-none">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fa-solid fa-user-plus me-2"></i>Crear usuario</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text text-muted mb-0">Dar de alta un operador o un administrador.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    {# Opciones que todavía no existen #}
+    <div class="col">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fa-solid fa-users me-2"></i>Empleados</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text text-muted mb-0">Próximamente</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fa-solid fa-calendar-days me-2"></i>Turnos</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text text-muted mb-0">Próximamente</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
