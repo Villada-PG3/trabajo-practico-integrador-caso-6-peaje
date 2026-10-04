@@ -62,7 +62,7 @@ def apertura_turno_view(request):
     return render(request, 'apertura_turno.html')
 
 def cobro_view(request):
-    """Vista principal de cobro de peaje (Categorías, OCR Webcam y Ticket)."""
+    """Vista principal de cobro de peaje, categorías y emisión de tickets."""
     return render(request, 'cobro.html')
 
 def cierre_caja_view(request):
