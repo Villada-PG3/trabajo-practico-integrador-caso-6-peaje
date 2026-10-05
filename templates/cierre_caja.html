@@ -63,54 +63,65 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('cr-legajo').textContent = localStorage.getItem('legajo') || '10452';
-    
-    // Cargar datos guardados del turno
-    const turno = JSON.parse(localStorage.getItem('turno_actual') || '{}');
-    document.getElementById('cr-casilla').textContent = turno.casilla_id || '01';
-    document.getElementById('cr-apertura').textContent = turno.fecha_hora_apertura ? new Date(turno.fecha_hora_apertura).toLocaleString() : new Date().toLocaleString();
+document.addEventListener('DOMContentLoaded', async () => {
+    // Todo el informe sale de la base de datos, no del navegador
+    const res = await apiFetch('/api/turnos/actual/');
+
+    if (res.status === 404) {
+        window.location.href = '/apertura-turno/';
+        return;
+    }
+    if (!res.ok) {
+        alert(mensajeError(res));
+        return;
+    }
+
+    const { turno, resumen } = res.data;
+
+    document.getElementById('cr-legajo').textContent = turno.legajo;
+    document.getElementById('cr-casilla').textContent = String(turno.casilla_numero).padStart(2, '0');
+    document.getElementById('cr-apertura').textContent = new Date(turno.fecha_hora_apertura).toLocaleString();
     document.getElementById('cr-cierre').textContent = new Date().toLocaleString();
-    document.getElementById('cr-inicial').textContent = turno.monto_cambio_inicial || '5000.00';
-
-    // Cargar historial de ventas locales del turno
-    const ventas = JSON.parse(localStorage.getItem('ventas_turno') || '[]');
-    
-    const resumen = {};
-    let totalVehiculos = 0;
-    let totalMonto = 0;
-
-    ventas.forEach(v => {
-        if (!resumen[v.categoria_nombre]) {
-            resumen[v.categoria_nombre] = { cantidad: 0, subtotal: 0 };
-        }
-        resumen[v.categoria_nombre].cantidad += 1;
-        resumen[v.categoria_nombre].subtotal += v.importe;
-        totalVehiculos += 1;
-        totalMonto += v.importe;
-    });
+    document.getElementById('cr-inicial').textContent = parseFloat(turno.monto_cambio_inicial).toFixed(2);
 
     const tbody = document.getElementById('tabla-desglose');
     tbody.innerHTML = '';
 
-    Object.keys(resumen).forEach(cat => {
+    resumen.categorias.forEach(c => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${cat}</td>
-            <td class="text-center">${resumen[cat].cantidad}</td>
-            <td class="text-end">$${resumen[cat].subtotal.toFixed(2)}</td>
-        `;
+
+        const tdCategoria = document.createElement('td');
+        tdCategoria.textContent = c.categoria;
+
+        const tdCantidad = document.createElement('td');
+        tdCantidad.className = 'text-center';
+        tdCantidad.textContent = c.cantidad;
+
+        const tdSubtotal = document.createElement('td');
+        tdSubtotal.className = 'text-end';
+        tdSubtotal.textContent = '$' + parseFloat(c.subtotal).toFixed(2);
+
+        tr.append(tdCategoria, tdCantidad, tdSubtotal);
         tbody.appendChild(tr);
     });
 
-    document.getElementById('total-vehiculos').textContent = totalVehiculos;
-    document.getElementById('total-recaudado').textContent = `$${totalMonto.toFixed(2)}`;
+    document.getElementById('total-vehiculos').textContent = resumen.total_vehiculos;
+    document.getElementById('total-recaudado').textContent = '$' + parseFloat(resumen.total_recaudado).toFixed(2);
 });
 
-function confirmarCierreDefinitivo() {
-    alert("Cierre de caja registrado exitosamente.");
-    localStorage.removeItem('turno_actual');
-    localStorage.removeItem('ventas_turno');
+async function confirmarCierreDefinitivo() {
+    const boton = document.querySelector('button[onclick="confirmarCierreDefinitivo()"]');
+    boton.disabled = true;
+
+    const res = await apiFetch('/api/turnos/cerrar/', { method: 'POST' });
+
+    if (!res.ok) {
+        alert('No se pudo cerrar el turno: ' + mensajeError(res));
+        boton.disabled = false;
+        return;
+    }
+
+    alert('Cierre de caja registrado exitosamente.');
     window.location.href = '/';
 }
 </script>

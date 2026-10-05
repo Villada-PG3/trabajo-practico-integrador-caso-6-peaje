@@ -1,11 +1,27 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login as auth_login
-from rest_framework.decorators import api_view
 import json
+import re
+from datetime import timedelta
+from decimal import Decimal, InvalidOperation
+from functools import wraps
+
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.db.models import Count, Q, Sum
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import user_passes_test
-from .models import Operador
+from django.shortcuts import render, redirect
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+
+from .models import (
+    CategoriaVehiculo,
+    Casilla,
+    Operador,
+    SentidoCobro,
+    Tarifa,
+    Turno,
+    Venta,
+)
 
 
 # Decorador que exime a esta función de validar el token CSRF (necesario cuando se reciben peticiones desde un cliente API como fetch)
@@ -53,18 +69,33 @@ def api_login_view(request): # Define la función de la vista para manejar el in
         }
     )
 
+@ensure_csrf_cookie
 def login_view(request):
     """Vista del formulario de inicio de sesión por legajo."""
     return render(request, 'login.html')
 
+@login_required(login_url="login")
+@ensure_csrf_cookie
 def apertura_turno_view(request):
     """Vista para abrir caja/turno (monto inicial y sentido de cobro)."""
-    return render(request, 'apertura_turno.html')
+    # Si el operador ya tiene un turno abierto, no tiene sentido abrir otro
+    if _turno_abierto(request.user):
+        return redirect("cobro")
+    casillas = Casilla.objects.select_related("estacion").order_by("numero_casilla")
+    return render(
+        request,
+        "apertura_turno.html",
+        {"casillas": casillas, "sentidos": SentidoCobro.choices},
+    )
 
+@login_required(login_url="login")
+@ensure_csrf_cookie
 def cobro_view(request):
     """Vista principal de cobro de peaje, categorías y emisión de tickets."""
     return render(request, 'cobro.html')
 
+@login_required(login_url="login")
+@ensure_csrf_cookie
 def cierre_caja_view(request):
     """Vista para resumen de cierre de turno e informe de caja."""
     return render(request, 'cierre_caja.html')
@@ -107,3 +138,259 @@ def api_operadores_view(request):
         es_administrador=data.get("es_administrador", False),
     )
     return JsonResponse({"legajo": legajo}, status=201)
+
+
+# ======================================================================
+#  API de turnos y ventas
+#  Autenticación por sesión de Django (la que crea api_login_view) y
+#  protección CSRF activa: el JS manda el token en el header X-CSRFToken.
+# ======================================================================
+
+def api_operador(metodo):
+    """Exige el método HTTP indicado y un operador con sesión iniciada."""
+    def decorador(vista):
+        @wraps(vista)
+        def envoltura(request, *args, **kwargs):
+            if request.method != metodo:
+                return JsonResponse({"detail": "Método no permitido"}, status=405)
+            if not request.user.is_authenticated:
+                return JsonResponse({"detail": "Sesión no iniciada"}, status=401)
+            return vista(request, *args, **kwargs)
+        return envoltura
+    return decorador
+
+
+def _leer_json(request):
+    """Devuelve el cuerpo JSON como dict, o None si es inválido."""
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _turno_abierto(operador):
+    """Turno actualmente abierto del operador (o None)."""
+    return (
+        Turno.objects.select_related("casilla__estacion", "operador")
+        .filter(
+            operador=operador,
+            fecha_hora_apertura__isnull=False,
+            fecha_hora_cierre__isnull=True,
+        )
+        .order_by("-fecha_hora_apertura")
+        .first()
+    )
+
+
+def _tarifa_vigente(categoria_id, hoy):
+    """Tarifa de la categoría que está vigente en la fecha dada."""
+    return (
+        Tarifa.objects.select_related("categoria")
+        .filter(categoria_id=categoria_id, vigente_desde__lte=hoy)
+        .filter(Q(vigente_hasta__isnull=True) | Q(vigente_hasta__gte=hoy))
+        .order_by("-vigente_desde")
+        .first()
+    )
+
+
+def _numero_ticket(venta):
+    return f"0004-{venta.numero_ticket:06d}"
+
+
+def _turno_a_dict(turno):
+    return {
+        "id_turno": turno.id_turno,
+        "legajo": turno.operador_id,
+        "casilla_id": turno.casilla_id,
+        "casilla_numero": turno.casilla.numero_casilla,
+        "sentido": turno.sentido_cobro,
+        "sentido_display": turno.get_sentido_cobro_display(),
+        "monto_cambio_inicial": str(turno.monto_cambio_inicial),
+        "fecha_hora_apertura": turno.fecha_hora_apertura.isoformat(),
+        "fecha_hora_cierre": (
+            turno.fecha_hora_cierre.isoformat() if turno.fecha_hora_cierre else None
+        ),
+    }
+
+
+def _resumen_turno(turno):
+    """Cantidad de vehículos y recaudación por categoría, calculado desde la BD."""
+    filas = (
+        Venta.objects.filter(turno=turno)
+        .values("tarifa__categoria_id", "tarifa__categoria__nombre")
+        .annotate(cantidad=Count("numero_ticket"), subtotal=Sum("importe_cobrado"))
+        .order_by("tarifa__categoria_id")
+    )
+    categorias = [
+        {
+            "categoria_id": f["tarifa__categoria_id"],
+            "categoria": f["tarifa__categoria__nombre"],
+            "cantidad": f["cantidad"],
+            "subtotal": str(Decimal(f["subtotal"]).quantize(Decimal("0.01"))),
+        }
+        for f in filas
+    ]
+    return {
+        "categorias": categorias,
+        "total_vehiculos": sum(c["cantidad"] for c in categorias),
+        "total_recaudado": str(sum((Decimal(c["subtotal"]) for c in categorias), Decimal("0.00"))),
+    }
+
+
+@api_operador("POST")
+def api_turno_abrir(request):
+    """Abre un turno: crea la fila en la tabla `turno`."""
+    data = _leer_json(request)
+    if data is None:
+        return JsonResponse({"detail": "JSON inválido"}, status=400)
+
+    sentido = data.get("sentido")
+    if sentido not in SentidoCobro.values:
+        return JsonResponse({"detail": "Sentido de cobro inválido"}, status=400)
+
+    try:
+        casilla = Casilla.objects.select_related("estacion").get(pk=int(data.get("casilla_id")))
+    except (TypeError, ValueError, Casilla.DoesNotExist):
+        return JsonResponse({"detail": "Casilla inválida"}, status=400)
+
+    try:
+        monto = Decimal(str(data.get("monto_cambio_inicial")))
+        if not monto.is_finite() or monto < 0 or monto >= Decimal("100000000"):
+            raise InvalidOperation
+        monto = monto.quantize(Decimal("0.01"))
+    except InvalidOperation:
+        return JsonResponse({"detail": "Monto de cambio inicial inválido"}, status=400)
+
+    with transaction.atomic():
+        # Si ya tenía un turno abierto (ej. recargó la página), lo retoma
+        existente = _turno_abierto(request.user)
+        if existente:
+            return JsonResponse(
+                {"turno": _turno_a_dict(existente), "reanudado": True}, status=200
+            )
+
+        casilla_ocupada = Turno.objects.filter(
+            casilla=casilla,
+            fecha_hora_apertura__isnull=False,
+            fecha_hora_cierre__isnull=True,
+        ).exists()
+        if casilla_ocupada:
+            return JsonResponse(
+                {"detail": "Esa casilla ya tiene un turno abierto"}, status=409
+            )
+
+        ahora = timezone.now()
+        turno = Turno.objects.create(
+            casilla=casilla,
+            operador=request.user,
+            sentido_cobro=sentido,
+            monto_cambio_inicial=monto,
+            inicio_programado=ahora,
+            fin_programado=ahora + timedelta(hours=8),  # turno estándar de 8 hs
+            fecha_hora_apertura=ahora,
+        )
+    return JsonResponse({"turno": _turno_a_dict(turno), "reanudado": False}, status=201)
+
+
+@api_operador("GET")
+def api_turno_actual(request):
+    """Devuelve el turno abierto del operador con su resumen de ventas."""
+    turno = _turno_abierto(request.user)
+    if turno is None:
+        return JsonResponse({"detail": "No hay un turno abierto"}, status=404)
+    return JsonResponse({"turno": _turno_a_dict(turno), "resumen": _resumen_turno(turno)})
+
+
+@api_operador("POST")
+def api_turno_cerrar(request):
+    """Cierra el turno abierto: completa fecha_hora_cierre."""
+    with transaction.atomic():
+        turno = _turno_abierto(request.user)
+        if turno is None:
+            return JsonResponse({"detail": "No hay un turno abierto"}, status=409)
+        turno.fecha_hora_cierre = timezone.now()
+        turno.save(update_fields=["fecha_hora_cierre"])
+    return JsonResponse({"turno": _turno_a_dict(turno), "resumen": _resumen_turno(turno)})
+
+
+@api_operador("GET")
+def api_tarifas(request):
+    """Categorías con su tarifa vigente hoy (para armar los botones de cobro)."""
+    hoy = timezone.localdate()
+    resultado = []
+    for categoria in CategoriaVehiculo.objects.order_by("id_categoria"):
+        tarifa = _tarifa_vigente(categoria.id_categoria, hoy)
+        if tarifa:
+            resultado.append(
+                {
+                    "categoria_id": categoria.id_categoria,
+                    "nombre": categoria.nombre,
+                    "monto": str(tarifa.monto),
+                }
+            )
+    return JsonResponse({"tarifas": resultado})
+
+
+@api_operador("POST")
+def api_ventas(request):
+    """
+    Registra una venta (ticket) en la tabla `venta`.
+    El importe NO lo manda el navegador: se toma de la tarifa vigente en la BD.
+    """
+    data = _leer_json(request)
+    if data is None:
+        return JsonResponse({"detail": "JSON inválido"}, status=400)
+
+    try:
+        categoria_id = int(data.get("categoria_id"))
+    except (TypeError, ValueError):
+        return JsonResponse({"detail": "Categoría inválida"}, status=400)
+
+    # Patente opcional: se normaliza (mayúsculas, sin espacios ni guiones)
+    patente = re.sub(r"[\s-]", "", str(data.get("patente") or "")).upper()
+    if patente == "S/PATENTE":
+        patente = ""
+    if patente and not re.fullmatch(r"[A-Z0-9]{1,15}", patente):
+        return JsonResponse({"detail": "Patente inválida"}, status=400)
+
+    turno = _turno_abierto(request.user)
+    if turno is None:
+        return JsonResponse(
+            {"detail": "No hay un turno abierto. Abrí un turno antes de cobrar."},
+            status=409,
+        )
+
+    tarifa = _tarifa_vigente(categoria_id, timezone.localdate())
+    if tarifa is None:
+        return JsonResponse(
+            {"detail": "No hay una tarifa vigente para esa categoría"}, status=404
+        )
+
+    venta = Venta.objects.create(
+        turno=turno,
+        tarifa=tarifa,
+        importe_cobrado=tarifa.monto,
+        patente_detectada=patente or None,
+    )
+    return JsonResponse(
+        {
+            "numero_ticket": venta.numero_ticket,
+            "ticket": _numero_ticket(venta),
+            "fecha_hora_emision": timezone.localtime(venta.fecha_hora_emision).isoformat(),
+            "categoria": tarifa.categoria.nombre,
+            "importe": str(venta.importe_cobrado),
+            "patente": venta.patente_detectada or "S/PATENTE",
+            "casilla_numero": turno.casilla.numero_casilla,
+            "legajo": turno.operador_id,
+        },
+        status=201,
+    )
+
+
+def api_logout_view(request):
+    """Cierra la sesión del operador."""
+    if request.method != "POST":
+        return JsonResponse({"detail": "Método no permitido"}, status=405)
+    auth_logout(request)
+    return JsonResponse({"detail": "Sesión cerrada"})

@@ -73,13 +73,15 @@ document.getElementById('form-login').addEventListener('submit', async function(
             localStorage.setItem('legajo', data.legajo);
             localStorage.setItem('es_admin', data.es_administrador);
 
-            // Usuario y contraseña correctos
-            window.location.href = '/prueba/';
+            // Credenciales correctas: sigue la apertura de turno
+            window.location.href = '/apertura-turno/';
 
         } else {
 
-            // Usuario o contraseña incorrectos
-            window.location.href = '/apertura-turno/';
+            // Credenciales incorrectas: se queda en el login y muestra el error
+            const alerta = document.getElementById('login-alert');
+            alerta.textContent = data.detail || 'No se pudo iniciar sesión';
+            alerta.classList.remove('d-none');
 
         }
 
