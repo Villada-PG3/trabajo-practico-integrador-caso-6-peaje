@@ -60,105 +60,11 @@
             </div>
             <div class="card-body p-3">
                 <div class="row g-2" id="categories-grid">
-                    
-                    <!-- Cat 1 -->
-                    <div class="col-md-6">
-                        <button class="btn btn-category w-100 p-3 text-start d-flex align-items-center justify-content-between" onclick="emitirTicket(1, 'Motocicletas', 60)">
-                            <div class="d-flex align-items-center">
-                                <span class="badge-cat me-3">1</span>
-                                <div>
-                                    <div class="fw-bold">Motocicletas</div>
-                                    <small class="text-muted">2 Ruedas</small>
-                                </div>
-                            </div>
-                            <span class="price-tag">$60</span>
-                        </button>
-                    </div>
-
-                    <!-- Cat 2 -->
-                    <div class="col-md-6">
-                        <button class="btn btn-category w-100 p-3 text-start d-flex align-items-center justify-content-between" onclick="emitirTicket(2, 'Automóviles', 90)">
-                            <div class="d-flex align-items-center">
-                                <span class="badge-cat me-3">2</span>
-                                <div>
-                                    <div class="fw-bold">Automóviles</div>
-                                    <small class="text-muted">Autos / Camionetas</small>
-                                </div>
-                            </div>
-                            <span class="price-tag">$90</span>
-                        </button>
-                    </div>
-
-                    <!-- Cat 3 -->
-                    <div class="col-md-6">
-                        <button class="btn btn-category w-100 p-3 text-start d-flex align-items-center justify-content-between" onclick="emitirTicket(3, 'Auto c/acoplado / Ómnibus menor', 130)">
-                            <div class="d-flex align-items-center">
-                                <span class="badge-cat me-3">3</span>
-                                <div>
-                                    <div class="fw-bold">Auto c/acoplado</div>
-                                    <small class="text-muted">Ómnibus menor a 3.10m</small>
-                                </div>
-                            </div>
-                            <span class="price-tag">$130</span>
-                        </button>
-                    </div>
-
-                    <!-- Cat 4 -->
-                    <div class="col-md-6">
-                        <button class="btn btn-category w-100 p-3 text-start d-flex align-items-center justify-content-between" onclick="emitirTicket(4, 'Ómnibus con acoplado', 180)">
-                            <div class="d-flex align-items-center">
-                                <span class="badge-cat me-3">4</span>
-                                <div>
-                                    <div class="fw-bold">Ómnibus c/acoplado</div>
-                                    <small class="text-muted">Ómnibus mayor a 3.10m</small>
-                                </div>
-                            </div>
-                            <span class="price-tag">$180</span>
-                        </button>
-                    </div>
-
-                    <!-- Cat 5 -->
-                    <div class="col-md-6">
-                        <button class="btn btn-category w-100 p-3 text-start d-flex align-items-center justify-content-between" onclick="emitirTicket(5, 'Camión c/acoplado', 270)">
-                            <div class="d-flex align-items-center">
-                                <span class="badge-cat me-3">5</span>
-                                <div>
-                                    <div class="fw-bold">Camión c/acoplado</div>
-                                    <small class="text-muted">Camión mayor a 3.10m</small>
-                                </div>
-                            </div>
-                            <span class="price-tag">$270</span>
-                        </button>
-                    </div>
-
-                    <!-- Cat 6 -->
-                    <div class="col-md-6">
-                        <button class="btn btn-category w-100 p-3 text-start d-flex align-items-center justify-content-between" onclick="emitirTicket(6, 'Pesados +3 ejes', 360)">
-                            <div class="d-flex align-items-center">
-                                <span class="badge-cat me-3">6</span>
-                                <div>
-                                    <div class="fw-bold">Pesados</div>
-                                    <small class="text-muted">Camiones 3+ ejes</small>
-                                </div>
-                            </div>
-                            <span class="price-tag">$360</span>
-                        </button>
-                    </div>
-
-                    <!-- Cat 7 -->
-                    <div class="col-12">
-                        <button class="btn btn-category w-100 p-3 text-start d-flex align-items-center justify-content-between" onclick="emitirTicket(7, 'Más de 6 ejes / Maquinaria', 450)">
-                            <div class="d-flex align-items-center">
-                                <span class="badge-cat me-3">7</span>
-                                <div>
-                                    <div class="fw-bold">Más de 6 ejes</div>
-                                    <small class="text-muted">Maquinaria especial y pesados extra</small>
-                                </div>
-                            </div>
-                            <span class="price-tag">$450</span>
-                        </button>
-                    </div>
-
+                    <!-- Los botones se generan desde cobro.js con las tarifas vigentes de la base -->
+                    <div class="col-12 text-center text-muted py-4" id="categories-loading">
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                        Cargando tarifas...
+                        </div>
                 </div>
             </div>
         </div>

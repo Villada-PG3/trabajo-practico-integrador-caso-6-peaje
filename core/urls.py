@@ -26,4 +26,12 @@ urlpatterns = [
 
     #procesa la creación de un nuevo usuario (operador) vía API
     path('api/operadores/', views.api_operadores_view, name='api-operadores'),
+
+    # --- API de turnos y ventas ---
+    path('api/turnos/abrir/', views.api_turno_abrir, name='api-turno-abrir'),
+    path('api/turnos/actual/', views.api_turno_actual, name='api-turno-actual'),
+    path('api/turnos/cerrar/', views.api_turno_cerrar, name='api-turno-cerrar'),
+    path('api/tarifas/', views.api_tarifas, name='api-tarifas'),
+    path('api/ventas/', views.api_ventas, name='api-ventas'),
+    path('api/logout/', views.api_logout_view, name='api-logout'),
 ]
