@@ -68,12 +68,18 @@ document.getElementById('form-login').addEventListener('submit', async function(
 
         const data = await response.json();
 
-        if (response.ok) {
+        if (response.ok && data.es_administrador) {
 
             localStorage.setItem('legajo', data.legajo);
             localStorage.setItem('es_admin', data.es_administrador);
 
-            // Credenciales correctas: sigue la apertura de turno
+            window.location.href = '/prueba/';
+
+        } else if (response.ok && data.legajo) {
+
+            localStorage.setItem('legajo', data.legajo);
+            localStorage.setItem('es_admin', data.es_administrador);
+
             window.location.href = '/apertura-turno/';
 
         } else {
