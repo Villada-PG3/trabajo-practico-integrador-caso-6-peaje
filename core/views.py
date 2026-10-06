@@ -60,14 +60,10 @@ def api_login_view(request): # Define la función de la vista para manejar el in
     auth_login(request, operador)
 
     # Si la autenticación fue exitosa, retorna una respuesta JSON con el código de estado 200 (OK por defecto)
-    return JsonResponse(
-        {
-            # Envía el legajo del operador autenticado
-            "legajo": operador.legajo,
-            # Envía un valor booleano (true/false) indicando si el operador es administrador
-            "es_administrador": operador.es_administrador,
-        }
-    )
+    return JsonResponse({
+    "legajo": operador.legajo,
+    "es_administrador": operador.es_administrador,
+    })
 
 @ensure_csrf_cookie
 def login_view(request):
