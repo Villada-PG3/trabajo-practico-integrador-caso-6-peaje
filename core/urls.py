@@ -34,4 +34,31 @@ urlpatterns = [
     path('api/tarifas/', views.api_tarifas, name='api-tarifas'),
     path('api/ventas/', views.api_ventas, name='api-ventas'),
     path('api/logout/', views.api_logout_view, name='api-logout'),
+
+    # Lista de rutas
+    path('panel/rutas/', views.RutaListView.as_view(), name='rutas'),
+    # Formulario de alta
+    path('panel/rutas/nueva/', views.RutaCreateView.as_view(), name='ruta_crear'),
+    # <int:pk> captura el número de la ruta que se quiere modificar
+    path('panel/rutas/<int:pk>/editar/', views.RutaUpdateView.as_view(), name='ruta_editar'),
+    # Lo mismo para borrar
+    path('panel/rutas/<int:pk>/borrar/', views.RutaDeleteView.as_view(), name='ruta_borrar'),
+
+        # Lista de estaciones
+    path('panel/estaciones/', views.EstacionListView.as_view(), name='estaciones'),
+    # Formulario de alta
+    path('panel/estaciones/nueva/', views.EstacionCreateView.as_view(), name='estacion_crear'),
+    # <int:pk> captura el número de la estación que se quiere modificar
+    path('panel/estaciones/<int:pk>/editar/', views.EstacionUpdateView.as_view(), name='estacion_editar'),
+    # Lo mismo para borrar
+    path('panel/estaciones/<int:pk>/borrar/', views.EstacionDeleteView.as_view(), name='estacion_borrar'),
+
+        # Lista de casillas
+    path('panel/casillas/', views.CasillaListView.as_view(), name='casillas'),
+    # Formulario de alta
+    path('panel/casillas/nueva/', views.CasillaCreateView.as_view(), name='casilla_crear'),
+    # <int:pk> captura el número de la casilla que se quiere modificar
+    path('panel/casillas/<int:pk>/editar/', views.CasillaUpdateView.as_view(), name='casilla_editar'),
+    # Lo mismo para borrar
+    path('panel/casillas/<int:pk>/borrar/', views.CasillaDeleteView.as_view(), name='casilla_borrar'),
 ]
