@@ -13,6 +13,11 @@ from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 
+from django import forms
+from django.urls import reverse_lazy
+from django.contrib.auth.mixins import UserPassesTestMixin
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+
 from .models import (
     CategoriaVehiculo,
     Casilla,
@@ -21,6 +26,7 @@ from .models import (
     Tarifa,
     Turno,
     Venta,
+    Ruta,
 )
 
 
@@ -390,3 +396,63 @@ def api_logout_view(request):
         return JsonResponse({"detail": "Método no permitido"}, status=405)
     auth_logout(request)
     return JsonResponse({"detail": "Sesión cerrada"})
+
+class SoloAdminMixin(UserPassesTestMixin):
+    """Protege la vista: solo entra un administrador logueado."""
+    # A dónde manda a quien no está logueado (nombre de la URL del login)
+    login_url = 'login'
+
+    def test_func(self):
+    # Django corre esto antes de ejecutar la vista; si devuelve False, la bloquea
+        u = self.request.user
+        return u.is_authenticated and u.es_administrador
+
+
+class BootstrapFormMixin:
+    """Le pone clases de Bootstrap a los campos del formulario, sin escribir HTML a mano."""
+    def get_form(self, form_class=None):
+        # Pide a Django el formulario que armó solo a partir de "fields"
+        form = super().get_form(form_class)
+        for campo in form.fields.values():
+            if isinstance(campo.widget, forms.Select):
+                # Los desplegables (claves foráneas) usan form-select
+                campo.widget.attrs['class'] = 'form-select'
+            else:
+                # El resto (texto, números) usa form-control
+                campo.widget.attrs['class'] = 'form-control'
+        return form
+
+
+class RutaListView(SoloAdminMixin, ListView):
+    """Lista todas las rutas."""
+    model = Ruta                                   # Qué modelo listar
+    template_name = 'panel/rutas_lista.html'       # Template que se muestra
+    context_object_name = 'rutas'                  # Nombre de la lista dentro del template
+    ordering = ['nombre']                          # Orden alfabético
+
+
+class RutaCreateView(SoloAdminMixin, BootstrapFormMixin, CreateView):
+    """Formulario para crear una ruta nueva."""
+    model = Ruta
+    fields = ['nombre']                            # Campos del modelo que se piden en el formulario
+    template_name = 'panel/form_generico.html'     # Un solo template de formulario para todo
+    success_url = reverse_lazy('rutas')            # A dónde vuelve después de guardar
+    # Variables fijas que recibe el template: el título y a qué URL vuelve el botón "Volver"
+    extra_context = {'titulo': 'Nueva ruta', 'volver': 'rutas'}
+
+
+class RutaUpdateView(SoloAdminMixin, BootstrapFormMixin, UpdateView):
+    """Formulario para modificar una ruta existente (el pk viene en la URL)."""
+    model = Ruta
+    fields = ['nombre']
+    template_name = 'panel/form_generico.html'
+    success_url = reverse_lazy('rutas')
+    extra_context = {'titulo': 'Modificar ruta', 'volver': 'rutas'}
+
+
+class RutaDeleteView(SoloAdminMixin, DeleteView):
+    """Pantalla de confirmación y borrado de una ruta."""
+    model = Ruta
+    template_name = 'panel/confirmar_borrado.html'
+    success_url = reverse_lazy('rutas')
+    extra_context = {'volver': 'rutas'}

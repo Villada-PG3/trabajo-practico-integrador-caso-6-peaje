@@ -34,16 +34,18 @@
         </div>
     </div>
 
+        {# Tarjeta activa: lleva a la gestión de rutas, estaciones y casillas #}
     <div class="col">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-secondary text-white">
-                <h5 class="mb-0"><i class="fa-solid fa-calendar-days me-2"></i>Turnos</h5>
+        <a href="/panel/rutas/" class="text-decoration-none">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fa-solid fa-road me-2"></i>Rutas y Casillas</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text text-muted mb-0">Crear, modificar y eliminar rutas, estaciones y casillas.</p>
+                </div>
             </div>
-            <div class="card-body">
-                <p class="card-text text-muted mb-0">Próximamente</p>
-            </div>
-        </div>
+        </a>
     </div>
-
 </div>
 {% endblock %}

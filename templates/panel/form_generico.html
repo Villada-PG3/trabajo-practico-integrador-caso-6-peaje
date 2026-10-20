@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{# "titulo" llega desde extra_context de la vista: "Nueva ruta", "Modificar ruta", etc. #}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+
+        {# "volver" es el NOMBRE de una URL (ej. 'rutas'), por eso se usa con {% url %} #}
+        <a href="{% url volver %}" class="text-decoration-none">&larr; Volver</a>
+
+        <div class="card shadow-sm border-0 mt-3">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">{{ titulo }}</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {# Obligatorio en todo formulario POST de Django #}
+                    {% csrf_token %}
+
+                    {# "form" lo arma Django a partir de los "fields" de la vista; se recorre campo por campo #}
+                    {% for campo in form %}
+                    <div class="mb-3">
+                        <label for="{{ campo.id_for_label }}" class="form-label">{{ campo.label }}</label>
+                        {# Dibuja el input, con las clases de Bootstrap que puso BootstrapFormMixin #}
+                        {{ campo }}
+                        {# Si el campo tiene errores de validación, se muestran en rojo debajo #}
+                        {% for error in campo.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+
+                    <button type="submit" class="btn btn-success w-100">Guardar</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

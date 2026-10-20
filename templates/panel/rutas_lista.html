@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{# Título de la pestaña del navegador #}
+{% block title %}Rutas{% endblock %}
+
+{% block content %}
+{# Link para volver al menú del administrador #}
+<a href="/prueba/" class="text-decoration-none">&larr; Volver al panel</a>
+
+{# Título a la izquierda y botón de alta a la derecha #}
+<div class="d-flex justify-content-between align-items-center my-3">
+    <h1 class="h3 mb-0">Rutas</h1>
+    {# {% url 'ruta_crear' %} arma la dirección usando el name de la ruta en urls.py #}
+    <a href="{% url 'ruta_crear' %}" class="btn btn-success">
+        <i class="fa-solid fa-plus me-1"></i> Nueva ruta
+    </a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Nombre</th>
+                <th>Estaciones</th>
+                <th class="text-end">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {# "rutas" es el context_object_name definido en RutaListView #}
+            {% for ruta in rutas %}
+            <tr>
+                <td>{{ ruta.nombre }}</td>
+                {# "estaciones" es el related_name del modelo Estacion; .count cuenta cuántas tiene la ruta #}
+                <td>{{ ruta.estaciones.count }}</td>
+                <td class="text-end">
+                    {# Pasamos ruta.pk para que la URL sepa a qué ruta se refiere #}
+                    <a href="{% url 'ruta_editar' ruta.pk %}" class="btn btn-sm btn-outline-primary">Modificar</a>
+                    <a href="{% url 'ruta_borrar' ruta.pk %}" class="btn btn-sm btn-outline-danger">Eliminar</a>
+                </td>
+            </tr>
+            {# Se muestra solo si la lista viene vacía #}
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted py-4">No hay rutas cargadas.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -34,4 +34,13 @@ urlpatterns = [
     path('api/tarifas/', views.api_tarifas, name='api-tarifas'),
     path('api/ventas/', views.api_ventas, name='api-ventas'),
     path('api/logout/', views.api_logout_view, name='api-logout'),
+
+    # Lista de rutas
+    path('panel/rutas/', views.RutaListView.as_view(), name='rutas'),
+    # Formulario de alta
+    path('panel/rutas/nueva/', views.RutaCreateView.as_view(), name='ruta_crear'),
+    # <int:pk> captura el número de la ruta que se quiere modificar
+    path('panel/rutas/<int:pk>/editar/', views.RutaUpdateView.as_view(), name='ruta_editar'),
+    # Lo mismo para borrar
+    path('panel/rutas/<int:pk>/borrar/', views.RutaDeleteView.as_view(), name='ruta_borrar'),
 ]
