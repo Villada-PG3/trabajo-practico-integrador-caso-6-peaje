@@ -43,4 +43,13 @@ urlpatterns = [
     path('panel/rutas/<int:pk>/editar/', views.RutaUpdateView.as_view(), name='ruta_editar'),
     # Lo mismo para borrar
     path('panel/rutas/<int:pk>/borrar/', views.RutaDeleteView.as_view(), name='ruta_borrar'),
+
+        # Lista de estaciones
+    path('panel/estaciones/', views.EstacionListView.as_view(), name='estaciones'),
+    # Formulario de alta
+    path('panel/estaciones/nueva/', views.EstacionCreateView.as_view(), name='estacion_crear'),
+    # <int:pk> captura el número de la estación que se quiere modificar
+    path('panel/estaciones/<int:pk>/editar/', views.EstacionUpdateView.as_view(), name='estacion_editar'),
+    # Lo mismo para borrar
+    path('panel/estaciones/<int:pk>/borrar/', views.EstacionDeleteView.as_view(), name='estacion_borrar'),
 ]

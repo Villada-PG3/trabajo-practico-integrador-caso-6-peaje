@@ -18,7 +18,10 @@
                 <form method="post">
                     {# Obligatorio en todo formulario POST de Django #}
                     {% csrf_token %}
-
+                    {# Errores que no pertenecen a un campo puntual, por ejemplo "ya existe una estación con ese número en esa ruta" #}
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% endif %}
                     {# "form" lo arma Django a partir de los "fields" de la vista; se recorre campo por campo #}
                     {% for campo in form %}
                     <div class="mb-3">
