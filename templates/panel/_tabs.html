@@ -1,4 +1,4 @@
-{# Pestañas de navegación entre Rutas y Estaciones; más adelante se suma la de Casillas #}
+{# Pestañas de navegación entre Rutas, Estaciones y Casillas #}
 <ul class="nav nav-tabs mb-3">
     <li class="nav-item">
         {# request.resolver_match.url_name es el name de la URL actual: si coincide, la pestaña se marca activa #}
@@ -8,5 +8,9 @@
     <li class="nav-item">
         <a class="nav-link {% if request.resolver_match.url_name == 'estaciones' %}active{% endif %}"
            href="{% url 'estaciones' %}">Estaciones</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'casillas' %}active{% endif %}"
+           href="{% url 'casillas' %}">Casillas</a>
     </li>
 </ul>

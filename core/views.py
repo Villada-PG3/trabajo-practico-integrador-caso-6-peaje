@@ -495,3 +495,43 @@ class EstacionDeleteView(SoloAdminMixin, DeleteView):
     template_name = 'panel/confirmar_borrado.html'      # El mismo template de borrado que usan las rutas
     success_url = reverse_lazy('estaciones')
     extra_context = {'volver': 'estaciones'}
+
+class CasillaListView(SoloAdminMixin, ListView):
+    """Lista todas las casillas."""
+    model = Casilla                                     # Qué modelo listar
+    template_name = 'panel/casillas_lista.html'         # Template que se muestra
+    context_object_name = 'casillas'                    # Nombre de la lista dentro del template
+    # select_related trae la estación y su ruta junto con cada casilla en una sola consulta
+    # ('estacion__ruta' sigue dos claves foráneas seguidas: casilla -> estación -> ruta)
+    # Ordena por ruta, después por número de estación y al final por número de casilla
+    queryset = Casilla.objects.select_related('estacion__ruta').order_by(
+        'estacion__ruta__nombre', 'estacion__numero_estacion', 'numero_casilla'
+    )
+
+
+class CasillaCreateView(SoloAdminMixin, BootstrapFormMixin, CreateView):
+    """Formulario para crear una casilla nueva."""
+    model = Casilla
+    # 'estacion' es una clave foránea: Django la dibuja como un desplegable con las estaciones
+    fields = ['estacion', 'numero_casilla']
+    template_name = 'panel/form_generico.html'          # El mismo template de formulario que usan rutas y estaciones
+    success_url = reverse_lazy('casillas')              # A dónde vuelve después de guardar
+    # Título que se muestra y nombre de la URL a la que lleva el botón "Volver"
+    extra_context = {'titulo': 'Nueva casilla', 'volver': 'casillas'}
+
+
+class CasillaUpdateView(SoloAdminMixin, BootstrapFormMixin, UpdateView):
+    """Formulario para modificar una casilla existente (el pk viene en la URL)."""
+    model = Casilla
+    fields = ['estacion', 'numero_casilla']
+    template_name = 'panel/form_generico.html'
+    success_url = reverse_lazy('casillas')
+    extra_context = {'titulo': 'Modificar casilla', 'volver': 'casillas'}
+
+
+class CasillaDeleteView(SoloAdminMixin, DeleteView):
+    """Pantalla de confirmación y borrado de una casilla."""
+    model = Casilla
+    template_name = 'panel/confirmar_borrado.html'      # El mismo template de borrado de las otras entidades
+    success_url = reverse_lazy('casillas')
+    extra_context = {'volver': 'casillas'}

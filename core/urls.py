@@ -52,4 +52,13 @@ urlpatterns = [
     path('panel/estaciones/<int:pk>/editar/', views.EstacionUpdateView.as_view(), name='estacion_editar'),
     # Lo mismo para borrar
     path('panel/estaciones/<int:pk>/borrar/', views.EstacionDeleteView.as_view(), name='estacion_borrar'),
+
+        # Lista de casillas
+    path('panel/casillas/', views.CasillaListView.as_view(), name='casillas'),
+    # Formulario de alta
+    path('panel/casillas/nueva/', views.CasillaCreateView.as_view(), name='casilla_crear'),
+    # <int:pk> captura el número de la casilla que se quiere modificar
+    path('panel/casillas/<int:pk>/editar/', views.CasillaUpdateView.as_view(), name='casilla_editar'),
+    # Lo mismo para borrar
+    path('panel/casillas/<int:pk>/borrar/', views.CasillaDeleteView.as_view(), name='casilla_borrar'),
 ]
