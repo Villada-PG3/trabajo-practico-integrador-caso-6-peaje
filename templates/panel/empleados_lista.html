@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{# Título de la pestaña del navegador #}
+{% block title %}Empleados{% endblock %}
+
+{% block content %}
+{# Link para volver al menú del administrador #}
+<a href="/prueba/" class="text-decoration-none">&larr; Volver al panel</a>
+
+{# Título a la izquierda y botón de alta a la derecha #}
+<div class="d-flex justify-content-between align-items-center my-3">
+    <h1 class="h3 mb-0">Empleados</h1>
+    {# El alta ya existe en la pantalla de Crear usuario; el botón lleva ahí #}
+    <a href="{% url 'crear_usuario' %}" class="btn btn-success">
+        <i class="fa-solid fa-plus me-1"></i> Nuevo empleado
+    </a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Legajo</th>
+                <th>Nombre</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Turnos</th>
+                <th class="text-end">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {# "empleados" es el context_object_name definido en EmpleadoListView #}
+            {% for emp in empleados %}
+            <tr>
+                <td>{{ emp.legajo }}</td>
+                <td>
+                    {{ emp.nombre }} {{ emp.apellido }}
+                    {# Marca al usuario que está logueado, para que sepa cuál es #}
+                    {% if emp.pk == request.user.pk %}<span class="text-muted small">(vos)</span>{% endif %}
+                </td>
+                <td>
+                    {# Etiqueta amarilla para administradores y gris para operadores #}
+                    {% if emp.es_administrador %}
+                        <span class="badge bg-warning text-dark">Administrador</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Operador</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {# Verde si está activo, rojo si está desactivado (no puede ingresar al sistema) #}
+                    {% if emp.activo %}
+                        <span class="badge bg-success">Activo</span>
+                    {% else %}
+                        <span class="badge bg-danger">Inactivo</span>
+                    {% endif %}
+                </td>
+                {# num_turnos lo calculó la vista con annotate #}
+                <td>{{ emp.num_turnos }}</td>
+                <td class="text-end">
+                    {# Pasamos emp.pk (el legajo) para que la URL sepa a qué empleado se refiere #}
+                    <a href="{% url 'empleado_editar' emp.pk %}" class="btn btn-sm btn-outline-primary">Modificar</a>
+
+                    {# El botón de activar/desactivar no se muestra para uno mismo #}
+                    {% if emp.pk != request.user.pk %}
+                    {# Formulario POST con csrf_token: cambia el estado sin salir de la pantalla #}
+                    <form method="post" action="{% url 'empleado_toggle' emp.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        {% if emp.activo %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Desactivar</button>
+                        {% else %}
+                            <button type="submit" class="btn btn-sm btn-outline-success">Activar</button>
+                        {% endif %}
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {# Se muestra solo si la lista viene vacía; colspan="6" ocupa las 6 columnas #}
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-4">No hay empleados cargados.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
