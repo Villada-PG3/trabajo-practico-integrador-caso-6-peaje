@@ -9,13 +9,14 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.http import JsonResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 
 from django import forms
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import UserPassesTestMixin
+from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
 from .models import (
@@ -418,6 +419,9 @@ class BootstrapFormMixin:
             if isinstance(campo.widget, forms.Select):
                 # Los desplegables (claves foráneas) usan form-select
                 campo.widget.attrs['class'] = 'form-select'
+            elif isinstance(campo.widget, forms.CheckboxInput):
+                # Las casillas de tilde (campos booleanos) usan form-check-input
+                campo.widget.attrs['class'] = 'form-check-input'
             else:
                 # El resto (texto, números) usa form-control
                 campo.widget.attrs['class'] = 'form-control'
@@ -535,3 +539,46 @@ class CasillaDeleteView(SoloAdminMixin, DeleteView):
     template_name = 'panel/confirmar_borrado.html'      # El mismo template de borrado de las otras entidades
     success_url = reverse_lazy('casillas')
     extra_context = {'volver': 'casillas'}
+
+class EmpleadoListView(SoloAdminMixin, ListView):
+    """Lista todos los empleados (operadores y administradores)."""
+    model = Operador                                    # Qué modelo listar
+    template_name = 'panel/empleados_lista.html'        # Template que se muestra
+    context_object_name = 'empleados'                   # Nombre de la lista dentro del template
+    # annotate agrega a cada operador un campo "num_turnos" con la cantidad de turnos que tiene
+    # ("turnos" es el related_name del modelo Turno); ordena por legajo
+    queryset = Operador.objects.annotate(num_turnos=Count('turnos')).order_by('legajo')
+
+
+class EmpleadoUpdateView(SoloAdminMixin, BootstrapFormMixin, UpdateView):
+    """Formulario para modificar un empleado (el pk es el legajo y viene en la URL)."""
+    model = Operador
+    # No se incluyen el legajo (es la clave primaria) ni la contraseña (se guarda encriptada)
+    fields = ['nombre', 'apellido', 'es_administrador', 'activo']
+    template_name = 'panel/form_generico.html'          # El mismo template de formulario que usan las demás pantallas
+    success_url = reverse_lazy('empleados')             # A dónde vuelve después de guardar
+    extra_context = {'titulo': 'Modificar empleado', 'volver': 'empleados'}
+
+    def form_valid(self, form):
+        # Se ejecuta cuando el formulario es válido, justo antes de guardar.
+        # Evita que un administrador se bloquee a sí mismo quitándose el rol o desactivándose.
+        es_uno_mismo = self.object.pk == self.request.user.pk
+        if es_uno_mismo and not (form.cleaned_data['es_administrador'] and form.cleaned_data['activo']):
+            # add_error(None, ...) agrega un error general, que form_generico.html muestra arriba del formulario
+            form.add_error(None, 'No podés quitarte el rol de administrador ni desactivarte a vos mismo.')
+            return self.form_invalid(form)
+        return super().form_valid(form)
+
+
+class EmpleadoToggleActivoView(SoloAdminMixin, View):
+    """Activa o desactiva un empleado con un clic (en vez de borrarlo)."""
+    # Solo acepta POST: cambiar datos con un simple link (GET) no es seguro
+    http_method_names = ['post']
+
+    def post(self, request, pk):
+        empleado = get_object_or_404(Operador, pk=pk)   # Busca por legajo; 404 si no existe
+        # Un administrador no puede desactivarse a sí mismo
+        if empleado.pk != request.user.pk:
+            empleado.activo = not empleado.activo       # Invierte el estado actual
+            empleado.save(update_fields=['activo'])     # Guarda solo ese campo
+        return redirect('empleados')                    # Vuelve a la lista

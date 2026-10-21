@@ -61,4 +61,10 @@ urlpatterns = [
     path('panel/casillas/<int:pk>/editar/', views.CasillaUpdateView.as_view(), name='casilla_editar'),
     # Lo mismo para borrar
     path('panel/casillas/<int:pk>/borrar/', views.CasillaDeleteView.as_view(), name='casilla_borrar'),
+        # Lista de empleados
+    path('panel/empleados/', views.EmpleadoListView.as_view(), name='empleados'),
+    # <int:pk> captura el legajo del empleado que se quiere modificar
+    path('panel/empleados/<int:pk>/editar/', views.EmpleadoUpdateView.as_view(), name='empleado_editar'),
+    # Activa o desactiva al empleado (solo por POST)
+    path('panel/empleados/<int:pk>/activar/', views.EmpleadoToggleActivoView.as_view(), name='empleado_toggle'),
 ]
