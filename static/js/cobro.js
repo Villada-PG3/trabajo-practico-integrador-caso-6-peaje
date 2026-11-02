@@ -121,7 +121,7 @@ async function procesarImagenSubida(event) {
 
         const textoDetectado = result.data.text;
         const patenteLimpia = extraerFormatoPatente(textoDetectado);
-
+    
         // 4. Reescribir el valor en el input
         if (patenteLimpia) {
             // Éxito total: Formato perfecto detectado
@@ -160,7 +160,13 @@ function extraerFormatoPatente(texto) {
     const matchTradicional = limpio.match(/[A-Z]{3}\d{3}/);
     if (matchTradicional) return matchTradicional[0];
 
+    //patron de patente moto:123ABC
+    const matchMoto = limpio.match(/\d{3}[A-Z]{3}/);
+    if (matchMoto) return matchMoto[0];
+
     return null;
+    // Después de guardar los datos...
+   
 }
 
 // Emite el ticket: PRIMERO lo guarda en la base de datos y solo si se guardó lo muestra
