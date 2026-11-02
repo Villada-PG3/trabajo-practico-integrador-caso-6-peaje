@@ -1,0 +1,100 @@
+---
+title: Diagrama UML de Clases - Sistema de Peaje (Caso 6)
+---
+classDiagram
+    direction TB
+
+    class AbstractBaseUser {
+        <<Django>>
+        -password : str
+        -last_login : DateTime [0..1]
+        +set_password(raw : str) void
+        +check_password(raw : str) bool
+    }
+
+    class OperadorManager {
+        <<BaseUserManager>>
+        +create_user(legajo : int, password : str) Operador
+        +create_superuser(legajo : int, password : str) Operador
+    }
+
+    class Operador {
+        -legajo : int «PK»
+        -nombre : str
+        -apellido : str
+        -es_administrador : bool
+        -activo : bool
+        +is_active() bool
+        +is_staff() bool
+        +has_perm(perm : str) bool
+        +has_module_perms(app_label : str) bool
+    }
+
+    class Ruta {
+        -id_ruta : int «PK»
+        -nombre : str
+    }
+
+    class Estacion {
+        -id_estacion : int «PK»
+        -nombre : str
+        -numero_estacion : int
+        -kilometro : Decimal
+    }
+
+    class Casilla {
+        -id_casilla : int «PK»
+        -numero_casilla : int
+    }
+
+    class SentidoCobro {
+        <<enumeration>>
+        NORTE_SUR
+        SUR_NORTE
+        ESTE_OESTE
+        OESTE_ESTE
+    }
+
+    class Turno {
+        -id_turno : int «PK»
+        -sentido_cobro : SentidoCobro
+        -monto_cambio_inicial : Decimal [0..1]
+        -inicio_programado : DateTime
+        -fin_programado : DateTime
+        -fecha_hora_apertura : DateTime [0..1]
+        -fecha_hora_cierre : DateTime [0..1]
+    }
+
+    class CategoriaVehiculo {
+        -id_categoria : int «PK»
+        -nombre : str
+    }
+
+    class Tarifa {
+        -id_tarifa : int «PK»
+        -monto : Decimal
+        -vigente_desde : Date
+        -vigente_hasta : Date [0..1]
+    }
+
+    class Venta {
+        -numero_ticket : int «PK»
+        -fecha_hora_emision : DateTime
+        -importe_cobrado : Decimal
+        -patente_detectada : str [0..1]
+    }
+
+    AbstractBaseUser <|-- Operador
+    OperadorManager "1" <.. "1" Operador : objects
+
+    Ruta "1" *-- "0..*" Estacion : tiene
+    Estacion "1" *-- "0..*" Casilla : posee
+
+    Casilla "1" --> "0..*" Turno : se asigna en
+    Operador "1" --> "0..*" Turno : trabaja
+    Turno ..> SentidoCobro : usa
+
+    Turno "1" --> "0..*" Venta : genera
+
+    CategoriaVehiculo "1" --> "1..*" Tarifa : tiene
+    Tarifa "1" --> "0..*" Venta : se aplica a
