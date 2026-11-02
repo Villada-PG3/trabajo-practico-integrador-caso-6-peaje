@@ -68,18 +68,26 @@ document.getElementById('form-login').addEventListener('submit', async function(
 
         const data = await response.json();
 
-        if (response.ok) {
+        if (response.ok && data.es_administrador) {
 
             localStorage.setItem('legajo', data.legajo);
             localStorage.setItem('es_admin', data.es_administrador);
 
-            // Usuario y contraseña correctos
             window.location.href = '/prueba/';
+
+        } else if (response.ok && data.legajo) {
+
+            localStorage.setItem('legajo', data.legajo);
+            localStorage.setItem('es_admin', data.es_administrador);
+
+            window.location.href = '/apertura-turno/';
 
         } else {
 
-            // Usuario o contraseña incorrectos
-            window.location.href = '/apertura-turno/';
+            // Credenciales incorrectas: se queda en el login y muestra el error
+            const alerta = document.getElementById('login-alert');
+            alerta.textContent = data.detail || 'No se pudo iniciar sesión';
+            alerta.classList.remove('d-none');
 
         }
 

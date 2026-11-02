@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-md-10">
         <div class="card shadow border-0">
             <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                 <h4 class="mb-0"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Informe de Cierre de Caja</h4>
@@ -13,6 +13,7 @@
                 </button>
             </div>
             <div class="card-body p-4" id="informe-caja-content">
+                <!-- Encabezado del reporte -->
                 <div class="row mb-3 border-bottom pb-3">
                     <div class="col-6">
                         <p class="mb-1"><strong>Operador Legajo:</strong> <span id="cr-legajo">---</span></p>
@@ -26,8 +27,9 @@
                     </div>
                 </div>
 
+                <!-- Resumen consolidado -->
                 <h5 class="fw-bold mb-3">Resumen de Ventas por Categoría</h5>
-                <div class="table-responsive">
+                <div class="table-responsive mb-4">
                     <table class="table table-bordered align-middle">
                         <thead class="table-light">
                             <tr>
@@ -36,9 +38,7 @@
                                 <th class="text-end">Subtotal ($)</th>
                             </tr>
                         </thead>
-                        <tbody id="tabla-desglose">
-                            <!-- Filas calculadas dinámicamente -->
-                        </tbody>
+                        <tbody id="tabla-desglose"></tbody>
                         <tfoot class="table-dark fw-bold">
                             <tr>
                                 <td>TOTAL RECAUDADO</td>
@@ -49,6 +49,27 @@
                     </table>
                 </div>
 
+                <!-- NUEVO SECTOR: Listado Detallado de Ventas Ordenadas -->
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-list-check me-2"></i>Detalle de Transacciones (Ordenadas por Categoría)</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover table-striped align-middle border">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>Ticket N°</th>
+                                <th>Categoría</th>
+                                <th>Patente</th>
+                                <th class="text-end">Importe</th>
+                                <th>Motivo Edición</th>
+                                <th class="text-center no-print">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-ventas-individuales">
+                            <!-- Inyectado por JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Acciones -->
                 <div class="mt-4 no-print d-flex gap-2 justify-content-end">
                     <a href="/cobro/" class="btn btn-secondary">Volver al Panel</a>
                     <button class="btn btn-danger fw-bold" onclick="confirmarCierreDefinitivo()">
@@ -59,28 +80,97 @@
         </div>
     </div>
 </div>
+
+<!-- MODAL DE EDICIÓN CON MOTIVO OBLIGATORIO -->
+<div class="modal fade no-print" id="modalEditarVenta" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Editar Registro de Venta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-editar-venta">
+                    <input type="hidden" id="edit-ticket-index">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ticket N°:</label>
+                        <input type="text" id="edit-ticket-num" class="form-control" readonly disabled>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit-categoria" class="form-label fw-bold">Nueva Categoría de Vehículo:</label>
+                        <select id="edit-categoria" class="form-select" required>
+                            <option value="Motocicletas|60">Cat. 1: Motocicletas ($60)</option>
+                            <option value="Automóviles|90">Cat. 2: Automóviles ($90)</option>
+                            <option value="Auto c/acoplado / Ómnibus menor|130">Cat. 3: Auto c/acoplado ($130)</option>
+                            <option value="Ómnibus con acoplado|180">Cat. 4: Ómnibus c/acoplado ($180)</option>
+                            <option value="Camión c/acoplado|270">Cat. 5: Camión c/acoplado ($270)</option>
+                            <option value="Pesados +3 ejes|360">Cat. 6: Pesados +3 ejes ($360)</option>
+                            <option value="Más de 6 ejes / Maquinaria|450">Cat. 7: Más de 6 ejes ($450)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit-patente" class="form-label fw-bold">Nueva Patente:</label>
+                        <input type="text" id="edit-patente" class="form-control text-uppercase" required placeholder="AA123CD">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit-motivo" class="form-label fw-bold text-danger">Motivo del Cambio (Obligatorio):</label>
+                        <textarea id="edit-motivo" class="form-control" rows="2" required placeholder="Ej: Error de tipeo del operador / OCR leyó mal la patente..."></textarea>
+                    </div>
+
+                    <div class="modal-footer px-0 pb-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning fw-bold">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+let modalEdicionInstance = null;
+
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('cr-legajo').textContent = localStorage.getItem('legajo') || '10452';
+    modalEdicionInstance = new bootstrap.Modal(document.getElementById('modalEditarVenta'));
     
-    // Cargar datos guardados del turno
+    // Cargar metadatos
+    document.getElementById('cr-legajo').textContent = localStorage.getItem('legajo') || '10452';
     const turno = JSON.parse(localStorage.getItem('turno_actual') || '{}');
     document.getElementById('cr-casilla').textContent = turno.casilla_id || '01';
     document.getElementById('cr-apertura').textContent = turno.fecha_hora_apertura ? new Date(turno.fecha_hora_apertura).toLocaleString() : new Date().toLocaleString();
     document.getElementById('cr-cierre').textContent = new Date().toLocaleString();
     document.getElementById('cr-inicial').textContent = turno.monto_cambio_inicial || '5000.00';
 
-    // Cargar historial de ventas locales del turno
+    // Renderizar informes
+    renderizarInformeCaja();
+});
+
+function renderizarInformeCaja() {
     const ventas = JSON.parse(localStorage.getItem('ventas_turno') || '[]');
-    
+
+    // 1. ORDENAR VENTAS SEGÚN CATEGORÍA DE VEHÍCULO
+    ventas.sort((a, b) => a.categoria_nombre.localeCompare(b.categoria_nombre));
+
     const resumen = {};
     let totalVehiculos = 0;
     let totalMonto = 0;
 
-    ventas.forEach(v => {
+    const tbodyIndividual = document.getElementById('tabla-ventas-individuales');
+    tbodyIndividual.innerHTML = '';
+
+    if (ventas.length === 0) {
+        tbodyIndividual.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No hay registros de ventas.</td></tr>`;
+    }
+
+    // 2. PROCESAR Y RENDERIZAR FILAS INDIVIDUALES
+    ventas.forEach((v, index) => {
+        // Totales consolidados
         if (!resumen[v.categoria_nombre]) {
             resumen[v.categoria_nombre] = { cantidad: 0, subtotal: 0 };
         }
@@ -88,10 +178,27 @@ document.addEventListener('DOMContentLoaded', () => {
         resumen[v.categoria_nombre].subtotal += v.importe;
         totalVehiculos += 1;
         totalMonto += v.importe;
+
+        // Fila individual
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${v.numero_ticket}</strong></td>
+            <td><span class="badge bg-primary">${v.categoria_nombre}</span></td>
+            <td class="fw-bold">${v.patente}</td>
+            <td class="text-end fw-bold">$${v.importe.toFixed(2)}</td>
+            <td><small class="text-muted">${v.motivo_modificacion || '<i>Sin cambios</i>'}</small></td>
+            <td class="text-center no-print">
+                <button class="btn btn-sm btn-outline-warning" onclick="abrirModalEdicion(${index})">
+                    <i class="fa-solid fa-pen"></i> Editar
+                </button>
+            </td>
+        `;
+        tbodyIndividual.appendChild(tr);
     });
 
-    const tbody = document.getElementById('tabla-desglose');
-    tbody.innerHTML = '';
+    // 3. RENDERIZAR TABLA CONSOLIDADA
+    const tbodyResumen = document.getElementById('tabla-desglose');
+    tbodyResumen.innerHTML = '';
 
     Object.keys(resumen).forEach(cat => {
         const tr = document.createElement('tr');
@@ -100,18 +207,78 @@ document.addEventListener('DOMContentLoaded', () => {
             <td class="text-center">${resumen[cat].cantidad}</td>
             <td class="text-end">$${resumen[cat].subtotal.toFixed(2)}</td>
         `;
-        tbody.appendChild(tr);
+        tbodyResumen.appendChild(tr);
     });
 
     document.getElementById('total-vehiculos').textContent = totalVehiculos;
     document.getElementById('total-recaudado').textContent = `$${totalMonto.toFixed(2)}`;
+}
+
+// Abrir Modal de edición para una venta particular
+function abrirModalEdicion(index) {
+    const ventas = JSON.parse(localStorage.getItem('ventas_turno') || '[]');
+    // Aseguramos que trabajamos con el arreglo ordenado
+    ventas.sort((a, b) => a.categoria_nombre.localeCompare(b.categoria_nombre));
+    
+    const venta = ventas[index];
+    if (!venta) return;
+
+    document.getElementById('edit-ticket-index').value = index;
+    document.getElementById('edit-ticket-num').value = venta.numero_ticket;
+    document.getElementById('edit-patente').value = venta.patente;
+    document.getElementById('edit-motivo').value = '';
+
+    // Seleccionar la categoría actual en el dropdown
+    const selectCat = document.getElementById('edit-categoria');
+    for (let option of selectCat.options) {
+        if (option.value.startsWith(venta.categoria_nombre)) {
+            option.selected = true;
+            break;
+        }
+    }
+
+    modalEdicionInstance.show();
+}
+
+// Guardar cambios con motivo obligatorio
+document.getElementById('form-editar-venta').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const index = parseInt(document.getElementById('edit-ticket-index').value);
+    const nuevaPatente = document.getElementById('edit-patente').value.trim().toUpperCase();
+    const motivo = document.getElementById('edit-motivo').value.trim();
+    
+    const [nuevaCategoriaNombre, nuevoImporteStr] = document.getElementById('edit-categoria').value.split('|');
+    const nuevoImporte = parseFloat(nuevoImporteStr);
+
+    if (!motivo) {
+        alert("El motivo del cambio es obligatorio.");
+        return;
+    }
+
+    const ventas = JSON.parse(localStorage.getItem('ventas_turno') || '[]');
+    ventas.sort((a, b) => a.categoria_nombre.localeCompare(b.categoria_nombre));
+
+    // Actualizar registro
+    ventas[index].patente = nuevaPatente;
+    ventas[index].categoria_nombre = nuevaCategoriaNombre;
+    ventas[index].importe = nuevoImporte;
+    ventas[index].motivo_modificacion = motivo;
+
+    // Guardar cambios en localStorage
+    localStorage.setItem('ventas_turno', JSON.stringify(ventas));
+
+    modalEdicionInstance.hide();
+    renderizarInformeCaja();
 });
 
 function confirmarCierreDefinitivo() {
-    alert("Cierre de caja registrado exitosamente.");
-    localStorage.removeItem('turno_actual');
-    localStorage.removeItem('ventas_turno');
-    window.location.href = '/';
+    if (confirm("¿Desea confirmar el cierre de caja definitivamente?")) {
+        alert("Cierre de caja registrado exitosamente.");
+        localStorage.removeItem('turno_actual');
+        localStorage.removeItem('ventas_turno');
+        window.location.href = '/';
+    }
 }
 </script>
 {% endblock %}

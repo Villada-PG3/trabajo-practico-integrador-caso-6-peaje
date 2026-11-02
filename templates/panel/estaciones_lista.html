@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{# Título de la pestaña del navegador #}
+{% block title %}Estaciones{% endblock %}
+
+{% block content %}
+{# Link para volver al menú del administrador #}
+<a href="/prueba/" class="text-decoration-none">&larr; Volver al panel</a>
+
+{# Título a la izquierda y botón de alta a la derecha #}
+<div class="d-flex justify-content-between align-items-center my-3">
+    <h1 class="h3 mb-0">Estaciones</h1>
+    {# {% url 'estacion_crear' %} arma la dirección usando el name de la ruta en urls.py #}
+    <a href="{% url 'estacion_crear' %}" class="btn btn-success">
+        <i class="fa-solid fa-plus me-1"></i> Nueva estación
+    </a>
+</div>
+
+{# Trae las pestañas desde el archivo _tabs.html #}
+{% include 'panel/_tabs.html' %}
+
+<div class="card shadow-sm border-0">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Ruta</th>
+                <th>Estación</th>
+                <th>N°</th>
+                <th>Km</th>
+                <th>Casillas</th>
+                <th class="text-end">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {# "estaciones" es el context_object_name definido en EstacionListView #}
+            {% for estacion in estaciones %}
+            <tr>
+                {# estacion.ruta.nombre sigue la clave foránea hasta el nombre de la ruta #}
+                <td>{{ estacion.ruta.nombre }}</td>
+                <td>{{ estacion.nombre }}</td>
+                <td>{{ estacion.numero_estacion }}</td>
+                <td>{{ estacion.kilometro }}</td>
+                {# "casillas" es el related_name del modelo Casilla; .count cuenta cuántas tiene la estación #}
+                <td>{{ estacion.casillas.count }}</td>
+                <td class="text-end">
+                    {# Pasamos estacion.pk para que la URL sepa a qué estación se refiere #}
+                    <a href="{% url 'estacion_editar' estacion.pk %}" class="btn btn-sm btn-outline-primary">Modificar</a>
+                    <a href="{% url 'estacion_borrar' estacion.pk %}" class="btn btn-sm btn-outline-danger">Eliminar</a>
+                </td>
+            </tr>
+            {# Se muestra solo si la lista viene vacía; colspan="6" ocupa las 6 columnas #}
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-4">No hay estaciones cargadas.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
