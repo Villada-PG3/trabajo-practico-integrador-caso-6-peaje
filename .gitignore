@@ -7,3 +7,4 @@ PRUEBARAMA.txt
 categorias_vehiculos.json
 db.sqlite3
 *.pyc
+*.sqlite3*
