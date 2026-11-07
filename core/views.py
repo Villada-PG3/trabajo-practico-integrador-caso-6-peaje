@@ -85,11 +85,23 @@ def apertura_turno_view(request):
     # Si el operador ya tiene un turno abierto, no tiene sentido abrir otro
     if _turno_abierto(request.user):
         return redirect("cobro")
-    casillas = Casilla.objects.select_related("estacion").order_by("numero_casilla")
+    rutas = (
+        Ruta.objects.filter(estaciones__casillas__isnull=False)
+        .distinct()
+        .order_by("nombre")
+    )
+    casillas = (
+        Casilla.objects.select_related("estacion", "estacion__ruta")
+        .order_by(
+            "estacion__ruta__nombre",
+            "estacion__numero_estacion",
+            "numero_casilla",
+        )
+    )
     return render(
         request,
         "apertura_turno.html",
-        {"casillas": casillas, "sentidos": SentidoCobro.choices},
+        {"rutas": rutas, "casillas": casillas, "sentidos": SentidoCobro.choices},
     )
 
 @login_required(login_url="login")
@@ -254,9 +266,19 @@ def api_turno_abrir(request):
         return JsonResponse({"detail": "Sentido de cobro inválido"}, status=400)
 
     try:
+        ruta_id = int(data.get("ruta_id"))
+    except (TypeError, ValueError):
+        return JsonResponse({"detail": "Ruta inválida"}, status=400)
+
+    try:
         casilla = Casilla.objects.select_related("estacion").get(pk=int(data.get("casilla_id")))
     except (TypeError, ValueError, Casilla.DoesNotExist):
         return JsonResponse({"detail": "Casilla inválida"}, status=400)
+
+    if casilla.estacion.ruta_id != ruta_id:
+        return JsonResponse(
+            {"detail": "La casilla no pertenece a la ruta seleccionada"}, status=400
+        )
 
     try:
         monto = Decimal(str(data.get("monto_cambio_inicial")))
