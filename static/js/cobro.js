@@ -50,6 +50,15 @@ async function inicializarDatosSesion() {
 async function cargarTarifas() {
     const grid = document.getElementById('categories-grid');
     const res = await apiFetch('/api/tarifas/');
+    const iconosCategoria = {
+        1: grid.dataset.iconoMoto,
+        2: grid.dataset.iconoAuto,
+        3: grid.dataset.iconoDosEjes,
+        4: grid.dataset.iconoTresCuatroEjes,
+        5: grid.dataset.iconoTresCuatroEjesDuales,
+        6: grid.dataset.iconoCincoSeisEjes,
+        7: grid.dataset.iconoMasSeisEjes
+    };
 
     grid.innerHTML = '';
     if (!res.ok || res.data.tarifas.length === 0) {
@@ -63,27 +72,29 @@ async function cargarTarifas() {
 
         const boton = document.createElement('button');
         boton.type = 'button';
-        boton.className = 'btn btn-category w-100 p-3 text-start d-flex align-items-center justify-content-between';
+        boton.className = 'btn btn-category w-100 p-3 d-flex align-items-center justify-content-between';
+        boton.setAttribute('aria-label', `${t.nombre}, cobrar $${parseFloat(t.monto).toFixed(2)}`);
         boton.addEventListener('click', () => emitirTicket(t.categoria_id));
 
-        const izquierda = document.createElement('div');
-        izquierda.className = 'd-flex align-items-center';
-
-        const badge = document.createElement('span');
-        badge.className = 'badge-cat me-3';
-        badge.textContent = t.categoria_id;
-
-        const nombre = document.createElement('div');
-        nombre.className = 'fw-bold';
-        nombre.textContent = t.nombre;
+        const iconoSrc = iconosCategoria[t.categoria_id];
+        if (iconoSrc) {
+            const icono = document.createElement('img');
+            icono.className = 'peaje-icono-vehiculo';
+            icono.src = iconoSrc;
+            icono.alt = '';
+            icono.setAttribute('aria-hidden', 'true');
+            boton.appendChild(icono);
+        } else {
+            const nombre = document.createElement('span');
+            nombre.className = 'fw-bold peaje-nombre-categoria';
+            nombre.textContent = t.nombre;
+            boton.appendChild(nombre);
+        }
 
         const precio = document.createElement('span');
         precio.className = 'price-tag';
         precio.textContent = '$' + parseFloat(t.monto).toFixed(0);
 
-        izquierda.appendChild(badge);
-        izquierda.appendChild(nombre);
-        boton.appendChild(izquierda);
         boton.appendChild(precio);
         col.appendChild(boton);
         grid.appendChild(col);

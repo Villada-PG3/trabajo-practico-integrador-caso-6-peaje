@@ -33,6 +33,7 @@ urlpatterns = [
     path('api/turnos/cerrar/', views.api_turno_cerrar, name='api-turno-cerrar'),
     path('api/tarifas/', views.api_tarifas, name='api-tarifas'),
     path('api/ventas/', views.api_ventas, name='api-ventas'),
+    path('api/ventas/<int:venta_id>/editar/', views.api_venta_editar, name='api-venta-editar'),
     path('api/logout/', views.api_logout_view, name='api-logout'),
 
     # Lista de rutas
@@ -63,8 +64,12 @@ urlpatterns = [
     path('panel/casillas/<int:pk>/borrar/', views.CasillaDeleteView.as_view(), name='casilla_borrar'),
         # Lista de empleados
     path('panel/empleados/', views.EmpleadoListView.as_view(), name='empleados'),
+    path('panel/estadisticas/', views.estadisticas_view, name='estadisticas'),
+    path('api/estadisticas/casilla/', views.api_estadisticas_casilla, name='api-estadisticas-casilla'),
+    path('api/estadisticas/empleado/', views.api_estadisticas_empleado, name='api-estadisticas-empleado'),
     # <int:pk> captura el legajo del empleado que se quiere modificar
     path('panel/empleados/<int:pk>/editar/', views.EmpleadoUpdateView.as_view(), name='empleado_editar'),
     # Activa o desactiva al empleado (solo por POST)
     path('panel/empleados/<int:pk>/activar/', views.EmpleadoToggleActivoView.as_view(), name='empleado_toggle'),
+    path('panel/empleados/<int:pk>/turnos/<int:turno_id>/cerrar/', views.EmpleadoCerrarTurnoView.as_view(), name='empleado_cerrar_turno'),
 ]

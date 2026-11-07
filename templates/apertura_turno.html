@@ -16,12 +16,25 @@
 
                 <form id="form-apertura">
                     <div class="mb-3">
-                        <label for="casilla-select" class="form-label">Casilla Asignada</label>
-                        <select class="form-select" id="casilla-select" required>
-                            {% for casilla in casillas %}
-                            <option value="{{ casilla.id_casilla }}">Casilla {{ casilla.numero_casilla|stringformat:"02d" }}{% if casilla.numero_casilla == 1 %} (Vía Rápida){% elif casilla.numero_casilla == 2 %} (Manual / Efectivo){% elif casilla.numero_casilla == 3 %} (Efectivo / Telepase){% endif %}</option>
+                        <label for="ruta-select" class="form-label">Ruta</label>
+                        <select class="form-select" id="ruta-select" required>
+                            <option value="" selected disabled>Seleccione una ruta</option>
+                            {% for ruta in rutas %}
+                            <option value="{{ ruta.id_ruta }}">{{ ruta.nombre }}</option>
                             {% empty %}
-                            <option value="" disabled selected>No hay casillas cargadas</option>
+                            <option value="" disabled>No hay rutas con casillas cargadas</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="casilla-select" class="form-label">Casilla Asignada</label>
+                        <select class="form-select" id="casilla-select" required disabled>
+                            <option value="" selected disabled>Seleccione primero una ruta</option>
+                            {% for casilla in casillas %}
+                            <option value="{{ casilla.id_casilla }}" data-ruta-id="{{ casilla.estacion.ruta_id }}" hidden>
+                                Casilla {{ casilla.numero_casilla|stringformat:"02d" }} - {{ casilla.estacion.nombre }}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -56,6 +69,23 @@
 
 {% block extra_js %}
 <script>
+const rutaSelect = document.getElementById('ruta-select');
+const casillaSelect = document.getElementById('casilla-select');
+
+rutaSelect.addEventListener('change', function() {
+    const rutaId = this.value;
+    let hayCasillas = false;
+
+    casillaSelect.value = '';
+    Array.from(casillaSelect.options).forEach(function(option) {
+        if (!option.dataset.rutaId) return;
+        option.hidden = option.dataset.rutaId !== rutaId;
+        if (!option.hidden) hayCasillas = true;
+    });
+
+    casillaSelect.disabled = !hayCasillas;
+});
+
 document.getElementById('form-apertura').addEventListener('submit', async function(e) {
     e.preventDefault();
 
@@ -69,7 +99,8 @@ document.getElementById('form-apertura').addEventListener('submit', async functi
         res = await apiFetch('/api/turnos/abrir/', {
             method: 'POST',
             body: {
-                casilla_id: document.getElementById('casilla-select').value,
+                ruta_id: rutaSelect.value,
+                casilla_id: casillaSelect.value,
                 sentido: document.getElementById('sentido').value,
                 monto_cambio_inicial: document.getElementById('monto-inicial').value
             }

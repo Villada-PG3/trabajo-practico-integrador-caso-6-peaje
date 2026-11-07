@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Cobro de Peaje{% endblock %}
 
@@ -20,9 +21,12 @@
             </div>
 
             <!-- Vista previa de la foto seleccionada -->
-            <div class="mb-3 d-flex justify-content-center align-items-center bg-dark rounded text-white-50" style="min-height: 180px; max-height: 200px; overflow: hidden;">
+            <div class="mb-3 d-flex justify-content-center align-items-center bg-dark rounded text-white-50 peaje-vista-previa" style="min-height: 180px; max-height: 200px; overflow: hidden;">
                 <img id="preview-imagen" src="" alt="Vista previa" class="img-fluid d-none" style="max-height: 190px; object-fit: contain;">
-                <span id="preview-placeholder"><i class="fa-solid fa-camera fa-2x mb-2 d-block"></i>Sin foto seleccionada</span>
+                <span id="preview-placeholder" class="peaje-camara-placeholder">
+                    <i class="fa-solid fa-camera fa-2x mb-2 d-block" aria-hidden="true"></i>
+                    <span>Sin foto seleccionada</span>
+                </span>
             </div>
 
             <!-- Indicador de carga cuando la IA lee la foto -->
@@ -59,7 +63,14 @@
                 <span class="badge bg-light text-dark">Tarifas Ley N° 8560</span>
             </div>
             <div class="card-body p-3">
-                <div class="row g-2" id="categories-grid">
+                <div class="row g-2" id="categories-grid"
+                     data-icono-moto="{% static 'Downloads.Moto.png' %}"
+                     data-icono-auto="{% static 'autp.png' %}"
+                     data-icono-dos-ejes="{% static 'Ejes2.png' %}"
+                     data-icono-tres-cuatro-ejes="{% static 'ejes3o4.png' %}"
+                     data-icono-tres-cuatro-ejes-duales="{% static 'ejes3o4-2.png' %}"
+                     data-icono-cinco-seis-ejes="{% static 'ejes5o6.png' %}"
+                     data-icono-mas-seis-ejes="{% static '+6.png' %}">
                     <!-- Los botones se generan desde cobro.js con las tarifas vigentes de la base -->
                     <div class="col-12 text-center text-muted py-4" id="categories-loading">
                         <div class="spinner-border spinner-border-sm me-2" role="status"></div>
@@ -131,6 +142,5 @@
 {% endblock %}
 
 {% block extra_js %}
-{% load static %}
 <script src="{% static 'js/cobro.js' %}"></script>
 {% endblock %}
