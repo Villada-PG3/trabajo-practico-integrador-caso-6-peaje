@@ -13,6 +13,7 @@
                 </button>
             </div>
             <div class="card-body p-4" id="informe-caja-content">
+                <div id="cierre-alert" class="alert alert-danger d-none" role="alert"></div>
                 <!-- Encabezado del reporte -->
                 <div class="row mb-3 border-bottom pb-3">
                     <div class="col-6">
@@ -101,13 +102,7 @@
                     <div class="mb-3">
                         <label for="edit-categoria" class="form-label fw-bold">Nueva Categoría de Vehículo:</label>
                         <select id="edit-categoria" class="form-select" required>
-                            <option value="Motocicletas|60">Cat. 1: Motocicletas ($60)</option>
-                            <option value="Automóviles|90">Cat. 2: Automóviles ($90)</option>
-                            <option value="Auto c/acoplado / Ómnibus menor|130">Cat. 3: Auto c/acoplado ($130)</option>
-                            <option value="Ómnibus con acoplado|180">Cat. 4: Ómnibus c/acoplado ($180)</option>
-                            <option value="Camión c/acoplado|270">Cat. 5: Camión c/acoplado ($270)</option>
-                            <option value="Pesados +3 ejes|360">Cat. 6: Pesados +3 ejes ($360)</option>
-                            <option value="Más de 6 ejes / Maquinaria|450">Cat. 7: Más de 6 ejes ($450)</option>
+                            <option value="" disabled selected>Cargando categorías...</option>
                         </select>
                     </div>
 
@@ -135,27 +130,66 @@
 {% block extra_js %}
 <script>
 let modalEdicionInstance = null;
+let ventasTurno = [];
+let tarifasVigentes = [];
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     modalEdicionInstance = new bootstrap.Modal(document.getElementById('modalEditarVenta'));
-    
-    // Cargar metadatos
-    document.getElementById('cr-legajo').textContent = localStorage.getItem('legajo') || '10452';
-    const turno = JSON.parse(localStorage.getItem('turno_actual') || '{}');
-    document.getElementById('cr-casilla').textContent = turno.casilla_id || '01';
-    document.getElementById('cr-apertura').textContent = turno.fecha_hora_apertura ? new Date(turno.fecha_hora_apertura).toLocaleString() : new Date().toLocaleString();
-    document.getElementById('cr-cierre').textContent = new Date().toLocaleString();
-    document.getElementById('cr-inicial').textContent = turno.monto_cambio_inicial || '5000.00';
+    try {
+        const [turnoRes, tarifasRes] = await Promise.all([
+            apiFetch('/api/turnos/actual/'),
+            apiFetch('/api/tarifas/')
+        ]);
 
-    // Renderizar informes
-    renderizarInformeCaja();
+        if (turnoRes.status === 404) {
+            window.location.href = '/apertura-turno/';
+            return;
+        }
+        if (!turnoRes.ok) {
+            throw new Error(mensajeError(turnoRes));
+        }
+        if (!tarifasRes.ok) {
+            throw new Error(mensajeError(tarifasRes));
+        }
+
+        const turno = turnoRes.data.turno;
+        ventasTurno = turnoRes.data.ventas;
+        tarifasVigentes = tarifasRes.data.tarifas;
+        document.getElementById('cr-legajo').textContent = turno.legajo;
+        document.getElementById('cr-casilla').textContent = turno.casilla_numero;
+        document.getElementById('cr-apertura').textContent =
+            new Date(turno.fecha_hora_apertura).toLocaleString();
+        document.getElementById('cr-cierre').textContent = new Date().toLocaleString();
+        document.getElementById('cr-inicial').textContent = turno.monto_cambio_inicial;
+        cargarCategoriasEdicion();
+        renderizarInformeCaja();
+    } catch (error) {
+        mostrarErrorCierre(error.message || 'No se pudo cargar el informe del turno.');
+    }
 });
 
-function renderizarInformeCaja() {
-    const ventas = JSON.parse(localStorage.getItem('ventas_turno') || '[]');
+function mostrarErrorCierre(mensaje) {
+    const alerta = document.getElementById('cierre-alert');
+    alerta.textContent = mensaje;
+    alerta.classList.remove('d-none');
+}
 
-    // 1. ORDENAR VENTAS SEGÚN CATEGORÍA DE VEHÍCULO
-    ventas.sort((a, b) => a.categoria_nombre.localeCompare(b.categoria_nombre));
+function cargarCategoriasEdicion() {
+    const select = document.getElementById('edit-categoria');
+    select.replaceChildren();
+    tarifasVigentes.forEach(tarifa => {
+        const opcion = document.createElement('option');
+        opcion.value = tarifa.categoria_id;
+        opcion.textContent = `${tarifa.nombre} ($${parseFloat(tarifa.monto).toFixed(2)})`;
+        select.appendChild(opcion);
+    });
+}
+
+function renderizarInformeCaja() {
+    ventasTurno.sort((a, b) =>
+        a.categoria.localeCompare(b.categoria) ||
+        a.numero_ticket - b.numero_ticket
+    );
 
     const resumen = {};
     let totalVehiculos = 0;
@@ -164,49 +198,51 @@ function renderizarInformeCaja() {
     const tbodyIndividual = document.getElementById('tabla-ventas-individuales');
     tbodyIndividual.innerHTML = '';
 
-    if (ventas.length === 0) {
+    if (ventasTurno.length === 0) {
         tbodyIndividual.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No hay registros de ventas.</td></tr>`;
     }
 
-    // 2. PROCESAR Y RENDERIZAR FILAS INDIVIDUALES
-    ventas.forEach((v, index) => {
-        // Totales consolidados
-        if (!resumen[v.categoria_nombre]) {
-            resumen[v.categoria_nombre] = { cantidad: 0, subtotal: 0 };
+    ventasTurno.forEach((venta, index) => {
+        const importe = parseFloat(venta.importe);
+        if (!resumen[venta.categoria]) {
+            resumen[venta.categoria] = { cantidad: 0, subtotal: 0 };
         }
-        resumen[v.categoria_nombre].cantidad += 1;
-        resumen[v.categoria_nombre].subtotal += v.importe;
+        resumen[venta.categoria].cantidad += 1;
+        resumen[venta.categoria].subtotal += importe;
         totalVehiculos += 1;
-        totalMonto += v.importe;
+        totalMonto += importe;
 
-        // Fila individual
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><strong>${v.numero_ticket}</strong></td>
-            <td><span class="badge bg-primary">${v.categoria_nombre}</span></td>
-            <td class="fw-bold">${v.patente}</td>
-            <td class="text-end fw-bold">$${v.importe.toFixed(2)}</td>
-            <td><small class="text-muted">${v.motivo_modificacion || '<i>Sin cambios</i>'}</small></td>
-            <td class="text-center no-print">
-                <button class="btn btn-sm btn-outline-warning" onclick="abrirModalEdicion(${index})">
-                    <i class="fa-solid fa-pen"></i> Editar
-                </button>
-            </td>
-        `;
+        agregarCelda(tr, venta.ticket, true);
+        const categoriaCell = document.createElement('td');
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-primary';
+        badge.textContent = venta.categoria;
+        categoriaCell.appendChild(badge);
+        tr.appendChild(categoriaCell);
+        agregarCelda(tr, venta.patente, true);
+        agregarCelda(tr, `$${importe.toFixed(2)}`, true, 'text-end fw-bold');
+        agregarCelda(tr, venta.motivo_modificacion || 'Sin cambios');
+        const accionCell = document.createElement('td');
+        accionCell.className = 'text-center no-print';
+        const boton = document.createElement('button');
+        boton.type = 'button';
+        boton.className = 'btn btn-sm btn-outline-warning';
+        boton.textContent = 'Editar';
+        boton.addEventListener('click', () => abrirModalEdicion(index));
+        accionCell.appendChild(boton);
+        tr.appendChild(accionCell);
         tbodyIndividual.appendChild(tr);
     });
 
-    // 3. RENDERIZAR TABLA CONSOLIDADA
     const tbodyResumen = document.getElementById('tabla-desglose');
     tbodyResumen.innerHTML = '';
 
     Object.keys(resumen).forEach(cat => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${cat}</td>
-            <td class="text-center">${resumen[cat].cantidad}</td>
-            <td class="text-end">$${resumen[cat].subtotal.toFixed(2)}</td>
-        `;
+        agregarCelda(tr, cat);
+        agregarCelda(tr, resumen[cat].cantidad, true, 'text-center');
+        agregarCelda(tr, `$${resumen[cat].subtotal.toFixed(2)}`, true, 'text-end');
         tbodyResumen.appendChild(tr);
     });
 
@@ -214,71 +250,87 @@ function renderizarInformeCaja() {
     document.getElementById('total-recaudado').textContent = `$${totalMonto.toFixed(2)}`;
 }
 
+function agregarCelda(fila, valor, negrita = false, clase = '') {
+    const celda = document.createElement('td');
+    celda.textContent = valor;
+    celda.className = clase;
+    if (negrita) {
+        const strong = document.createElement('strong');
+        strong.textContent = valor;
+        celda.replaceChildren(strong);
+    }
+    fila.appendChild(celda);
+}
+
 // Abrir Modal de edición para una venta particular
 function abrirModalEdicion(index) {
-    const ventas = JSON.parse(localStorage.getItem('ventas_turno') || '[]');
-    // Aseguramos que trabajamos con el arreglo ordenado
-    ventas.sort((a, b) => a.categoria_nombre.localeCompare(b.categoria_nombre));
-    
-    const venta = ventas[index];
+    const venta = ventasTurno[index];
     if (!venta) return;
 
     document.getElementById('edit-ticket-index').value = index;
-    document.getElementById('edit-ticket-num').value = venta.numero_ticket;
+    document.getElementById('edit-ticket-num').value = venta.ticket;
     document.getElementById('edit-patente').value = venta.patente;
     document.getElementById('edit-motivo').value = '';
-
-    // Seleccionar la categoría actual en el dropdown
-    const selectCat = document.getElementById('edit-categoria');
-    for (let option of selectCat.options) {
-        if (option.value.startsWith(venta.categoria_nombre)) {
-            option.selected = true;
-            break;
-        }
-    }
-
+    document.getElementById('edit-categoria').value = venta.categoria_id;
     modalEdicionInstance.show();
 }
 
-// Guardar cambios con motivo obligatorio
-document.getElementById('form-editar-venta').addEventListener('submit', function(e) {
+document.getElementById('form-editar-venta').addEventListener('submit', async function(e) {
     e.preventDefault();
 
-    const index = parseInt(document.getElementById('edit-ticket-index').value);
+    const index = Number.parseInt(document.getElementById('edit-ticket-index').value, 10);
+    const venta = ventasTurno[index];
+    if (!venta) return;
     const nuevaPatente = document.getElementById('edit-patente').value.trim().toUpperCase();
     const motivo = document.getElementById('edit-motivo').value.trim();
-    
-    const [nuevaCategoriaNombre, nuevoImporteStr] = document.getElementById('edit-categoria').value.split('|');
-    const nuevoImporte = parseFloat(nuevoImporteStr);
 
     if (!motivo) {
         alert("El motivo del cambio es obligatorio.");
         return;
     }
 
-    const ventas = JSON.parse(localStorage.getItem('ventas_turno') || '[]');
-    ventas.sort((a, b) => a.categoria_nombre.localeCompare(b.categoria_nombre));
+    let res;
+    try {
+        res = await apiFetch(`/api/ventas/${venta.numero_ticket}/editar/`, {
+            method: 'POST',
+            body: {
+                categoria_id: document.getElementById('edit-categoria').value,
+                patente: nuevaPatente,
+                motivo: motivo
+            }
+        });
+    } catch (error) {
+        mostrarErrorCierre('No se pudo conectar con el servidor para modificar la venta.');
+        return;
+    }
+    if (!res.ok) {
+        mostrarErrorCierre('No se pudo modificar la venta: ' + mensajeError(res));
+        return;
+    }
 
-    // Actualizar registro
-    ventas[index].patente = nuevaPatente;
-    ventas[index].categoria_nombre = nuevaCategoriaNombre;
-    ventas[index].importe = nuevoImporte;
-    ventas[index].motivo_modificacion = motivo;
-
-    // Guardar cambios en localStorage
-    localStorage.setItem('ventas_turno', JSON.stringify(ventas));
-
+    ventasTurno[index] = res.data.venta;
     modalEdicionInstance.hide();
     renderizarInformeCaja();
 });
 
 function confirmarCierreDefinitivo() {
-    if (confirm("¿Desea confirmar el cierre de caja definitivamente?")) {
-        alert("Cierre de caja registrado exitosamente.");
-        localStorage.removeItem('turno_actual');
-        localStorage.removeItem('ventas_turno');
-        window.location.href = '/';
+    if (!confirm("¿Desea confirmar el cierre de caja definitivamente?")) return;
+    cerrarTurno();
+}
+
+async function cerrarTurno() {
+    let res;
+    try {
+        res = await apiFetch('/api/turnos/cerrar/', { method: 'POST' });
+    } catch (error) {
+        mostrarErrorCierre('No se pudo conectar con el servidor para cerrar el turno.');
+        return;
     }
+    if (!res.ok) {
+        mostrarErrorCierre('No se pudo cerrar el turno: ' + mensajeError(res));
+        return;
+    }
+    window.location.href = '/apertura-turno/';
 }
 </script>
 {% endblock %}

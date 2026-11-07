@@ -1,0 +1,331 @@
+{% extends 'base.html' %}
+
+{% block title %}Estadísticas{% endblock %}
+
+{% block content %}
+<a href="/prueba/" class="text-decoration-none">&larr; Volver al panel</a>
+<h1 class="h3 my-3"><i class="fa-solid fa-chart-line me-2"></i>Estadísticas</h1>
+
+<ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="casilla-tab" data-bs-toggle="tab"
+                data-bs-target="#casilla-panel" type="button" role="tab">
+            Estadísticas de casilla
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="empleado-tab" data-bs-toggle="tab"
+                data-bs-target="#empleado-panel" type="button" role="tab">
+            Estadísticas de empleado
+        </button>
+    </li>
+</ul>
+
+<div id="estadisticas-error" class="alert alert-danger d-none" role="alert"></div>
+<div class="tab-content">
+    <section class="tab-pane fade show active" id="casilla-panel" role="tabpanel">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label for="ruta-select" class="form-label">Ruta</label>
+                        <select id="ruta-select" class="form-select">
+                            <option value="">Seleccione una ruta</option>
+                            {% for ruta in rutas %}
+                            <option value="{{ ruta.id_ruta }}">{{ ruta.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label for="casilla-select" class="form-label">Casilla</label>
+                        <select id="casilla-select" class="form-select" disabled>
+                            <option value="">Seleccione primero una ruta</option>
+                            {% for casilla in casillas %}
+                            <option value="{{ casilla.id_casilla }}"
+                                    data-ruta-id="{{ casilla.estacion.ruta_id }}" hidden>
+                                Casilla {{ casilla.numero_casilla }} - {{ casilla.estacion.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="casilla-resultados" class="d-none">
+            <h2 class="h5 mb-3" id="casilla-titulo"></h2>
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="text-muted">Ventas registradas</div>
+                            <div class="display-6 fw-bold" id="casilla-total-ventas">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="text-muted">Hora de mayor tráfico</div>
+                            <div class="display-6 fw-bold" id="casilla-hora-pico">Sin ventas</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <h3 class="h6">Porcentaje de ventas por vehículo</h3>
+                            <canvas id="categorias-chart" aria-label="Ventas por categoría de vehículo"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <h3 class="h6">Tráfico por hora</h3>
+                            <canvas id="horas-chart" aria-label="Cantidad de ventas por hora"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="tab-pane fade" id="empleado-panel" role="tabpanel">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <label for="empleado-select" class="form-label">Empleado</label>
+                <select id="empleado-select" class="form-select">
+                    <option value="">Seleccione un empleado</option>
+                    {% for empleado in empleados %}
+                    <option value="{{ empleado.legajo }}">{{ empleado.legajo }} - {{ empleado.nombre }} {{ empleado.apellido }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div id="empleado-resultados" class="d-none">
+            <h2 class="h5 mb-3" id="empleado-titulo"></h2>
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="text-muted">Ventas realizadas</div>
+                            <div class="display-6 fw-bold" id="empleado-total-ventas">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="text-muted">Turnos trabajados</div>
+                            <div class="display-6 fw-bold" id="empleado-total-turnos">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="text-muted">Comentarios / correcciones</div>
+                            <div class="display-6 fw-bold" id="empleado-total-correcciones">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <h3 class="h6">Turnos trabajados por casilla</h3>
+                            <canvas id="empleado-casillas-chart" aria-label="Turnos trabajados por casilla"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <h3 class="h6">Actividad por casilla</h3>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead><tr><th>Ruta / Casilla</th><th class="text-end">Turnos</th><th class="text-end">Ventas</th></tr></thead>
+                                    <tbody id="empleado-casillas-tabla"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h3 class="h6">Detalle de comentarios y correcciones</h3>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped align-middle">
+                            <thead><tr><th>Ticket</th><th>Fecha</th><th>Casilla</th><th>Patente (antes → después)</th><th>Categoría (antes → después)</th><th>Motivo</th></tr></thead>
+                            <tbody id="empleado-correcciones-tabla"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+let categoriasChart = null;
+let horasChart = null;
+let empleadoCasillasChart = null;
+
+const errorBox = document.getElementById('estadisticas-error');
+function mostrarError(mensaje) {
+    errorBox.textContent = mensaje;
+    errorBox.classList.remove('d-none');
+}
+function limpiarError() {
+    errorBox.textContent = '';
+    errorBox.classList.add('d-none');
+}
+function agregarCelda(fila, contenido) {
+    const celda = document.createElement('td');
+    celda.textContent = contenido;
+    fila.appendChild(celda);
+}
+function etiquetaCasilla(item) {
+    return `${item.ruta} - Casilla ${item.casilla}`;
+}
+function crearGrafico(anterior, canvasId, config) {
+    if (typeof Chart === 'undefined') {
+        throw new Error('No se pudo cargar la biblioteca para mostrar los gráficos.');
+    }
+    if (anterior) anterior.destroy();
+    return new Chart(document.getElementById(canvasId), config);
+}
+
+const rutaSelect = document.getElementById('ruta-select');
+const casillaSelect = document.getElementById('casilla-select');
+rutaSelect.addEventListener('change', () => {
+    casillaSelect.value = '';
+    let cantidad = 0;
+    Array.from(casillaSelect.options).forEach(opcion => {
+        if (!opcion.dataset.rutaId) return;
+        opcion.hidden = opcion.dataset.rutaId !== rutaSelect.value;
+        if (!opcion.hidden) cantidad += 1;
+    });
+    casillaSelect.disabled = !rutaSelect.value || cantidad === 0;
+    casillaSelect.options[0].textContent = rutaSelect.value
+        ? (cantidad ? 'Seleccione una casilla' : 'La ruta no tiene casillas')
+        : 'Seleccione primero una ruta';
+});
+
+casillaSelect.addEventListener('change', async () => {
+    if (!rutaSelect.value || !casillaSelect.value) return;
+    limpiarError();
+    try {
+        const params = new URLSearchParams({
+            ruta_id: rutaSelect.value,
+            casilla_id: casillaSelect.value
+        });
+        const res = await apiFetch(`/api/estadisticas/casilla/?${params}`);
+        if (!res.ok) throw new Error(mensajeError(res));
+        const datos = res.data;
+        document.getElementById('casilla-resultados').classList.remove('d-none');
+        document.getElementById('casilla-titulo').textContent =
+            `${datos.ruta} - ${datos.estacion} - Casilla ${datos.casilla}`;
+        document.getElementById('casilla-total-ventas').textContent = datos.total_ventas;
+        document.getElementById('casilla-hora-pico').textContent =
+            datos.hora_pico === null ? 'Sin ventas' : `${String(datos.hora_pico).padStart(2, '0')}:00`;
+        categoriasChart = crearGrafico(categoriasChart, 'categorias-chart', {
+            type: 'doughnut',
+            data: {
+                labels: datos.categorias.map(item => `${item.nombre} (${item.porcentaje}%)`),
+                datasets: [{ data: datos.categorias.map(item => item.cantidad) }]
+            },
+            options: { responsive: true }
+        });
+        horasChart = crearGrafico(horasChart, 'horas-chart', {
+            type: 'bar',
+            data: {
+                labels: datos.ventas_por_hora.map((_, hora) => `${String(hora).padStart(2, '0')}:00`),
+                datasets: [{ label: 'Ventas', data: datos.ventas_por_hora }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        });
+    } catch (error) {
+        mostrarError(error.message || 'No se pudieron cargar las estadísticas de la casilla.');
+    }
+});
+
+document.getElementById('empleado-select').addEventListener('change', async event => {
+    if (!event.target.value) return;
+    limpiarError();
+    try {
+        const params = new URLSearchParams({ legajo: event.target.value });
+        const res = await apiFetch(`/api/estadisticas/empleado/?${params}`);
+        if (!res.ok) throw new Error(mensajeError(res));
+        const datos = res.data;
+        document.getElementById('empleado-resultados').classList.remove('d-none');
+        document.getElementById('empleado-titulo').textContent =
+            `${datos.empleado.nombre} (Legajo ${datos.empleado.legajo})`;
+        document.getElementById('empleado-total-ventas').textContent = datos.total_ventas;
+        document.getElementById('empleado-total-turnos').textContent = datos.total_turnos;
+        document.getElementById('empleado-total-correcciones').textContent = datos.total_correcciones;
+
+        const tbodyCasillas = document.getElementById('empleado-casillas-tabla');
+        tbodyCasillas.replaceChildren();
+        datos.casillas.forEach(item => {
+            const fila = document.createElement('tr');
+            agregarCelda(fila, etiquetaCasilla(item));
+            agregarCelda(fila, item.turnos);
+            agregarCelda(fila, item.ventas);
+            fila.cells[1].className = 'text-end';
+            fila.cells[2].className = 'text-end';
+            tbodyCasillas.appendChild(fila);
+        });
+        if (!datos.casillas.length) {
+            const fila = tbodyCasillas.insertRow();
+            const celda = fila.insertCell();
+            celda.colSpan = 3;
+            celda.className = 'text-muted text-center';
+            celda.textContent = 'No hay turnos registrados.';
+        }
+
+        const tbodyCorrecciones = document.getElementById('empleado-correcciones-tabla');
+        tbodyCorrecciones.replaceChildren();
+        datos.correcciones.forEach(item => {
+            const fila = document.createElement('tr');
+            agregarCelda(fila, item.ticket);
+            agregarCelda(fila, new Date(item.fecha_hora).toLocaleString());
+            agregarCelda(fila, item.casilla);
+            agregarCelda(fila, `${item.patente_anterior} → ${item.patente_nueva}`);
+            agregarCelda(fila, `${item.categoria_anterior} → ${item.categoria_nueva}`);
+            agregarCelda(fila, item.motivo);
+            tbodyCorrecciones.appendChild(fila);
+        });
+        if (!datos.correcciones.length) {
+            const fila = tbodyCorrecciones.insertRow();
+            const celda = fila.insertCell();
+            celda.colSpan = 6;
+            celda.className = 'text-muted text-center';
+            celda.textContent = 'No hay comentarios ni correcciones registrados.';
+        }
+
+        empleadoCasillasChart = crearGrafico(empleadoCasillasChart, 'empleado-casillas-chart', {
+            type: 'bar',
+            data: {
+                labels: datos.casillas.map(etiquetaCasilla),
+                datasets: [{ label: 'Turnos', data: datos.casillas.map(item => item.turnos) }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        });
+    } catch (error) {
+        mostrarError(error.message || 'No se pudieron cargar las estadísticas del empleado.');
+    }
+});
+</script>
+{% endblock %}

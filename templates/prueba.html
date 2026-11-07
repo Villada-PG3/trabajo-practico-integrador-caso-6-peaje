@@ -6,7 +6,7 @@
 <h1 class="h3 mb-1">Panel de Administración</h1>
 <p class="text-muted mb-4">Elegí qué querés hacer.</p>
 
-<div class="row row-cols-1 row-cols-md-3 g-4">
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
 
     {# Opción activa #}
     <div class="col">
@@ -45,6 +45,19 @@
                 </div>
                 <div class="card-body">
                     <p class="card-text text-muted mb-0">Crear, modificar y eliminar rutas, estaciones y casillas.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col">
+        <a href="{% url 'estadisticas' %}" class="text-decoration-none">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fa-solid fa-chart-line me-2"></i>Estadísticas</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text text-muted mb-0">Consultar ventas, actividad de casillas y correcciones por empleado.</p>
                 </div>
             </div>
         </a>

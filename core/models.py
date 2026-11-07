@@ -1,6 +1,7 @@
 # Create your models here.
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager #Te permite crear un modelo de usuario personalizado
 from django.db import models
+from django.utils import timezone
  
 class Ruta(models.Model):
     id_ruta = models.AutoField(primary_key=True)
@@ -171,9 +172,37 @@ class Venta(models.Model):
     fecha_hora_emision = models.DateTimeField(auto_now_add=True)
     importe_cobrado = models.DecimalField(max_digits=10, decimal_places=2)
     patente_detectada = models.CharField(max_length=15, null=True, blank=True)
+    motivo_modificacion = models.TextField(blank=True)
  
     class Meta:
         db_table = "venta"
  
     def __str__(self):
         return f"Ticket #{self.numero_ticket}"
+
+
+class VentaModificacion(models.Model):
+    venta = models.ForeignKey(
+        Venta,
+        on_delete=models.PROTECT,
+        related_name="modificaciones",
+    )
+    operador = models.ForeignKey(
+        Operador,
+        on_delete=models.PROTECT,
+        related_name="modificaciones_ventas",
+        db_column="legajo_operador",
+    )
+    fecha_hora = models.DateTimeField(default=timezone.now)
+    categoria_anterior = models.CharField(max_length=80)
+    categoria_nueva = models.CharField(max_length=80)
+    patente_anterior = models.CharField(max_length=15, blank=True)
+    patente_nueva = models.CharField(max_length=15, blank=True)
+    motivo = models.TextField()
+
+    class Meta:
+        db_table = "venta_modificacion"
+        ordering = ["-fecha_hora", "-id"]
+
+    def __str__(self):
+        return f"Modificación de venta #{self.venta_id} por {self.operador_id}"

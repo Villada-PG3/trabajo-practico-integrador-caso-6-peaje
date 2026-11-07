@@ -55,7 +55,36 @@
                     {% endif %}
                 </td>
                 {# num_turnos lo calculó la vista con annotate #}
-                <td>{{ emp.num_turnos }}</td>
+                <td>
+                    {{ emp.num_turnos }}
+                    {% if emp.turnos_abiertos %}
+                    <div class="mt-2">
+                        {% for turno in emp.turnos_abiertos %}
+                        <div class="border rounded p-2 mb-2 text-start">
+                            <span class="badge bg-warning text-dark">Abierto</span>
+                            <div class="small mt-1">
+                                Turno #{{ turno.id_turno }} · {{ turno.casilla.estacion.ruta.nombre }} ·
+                                {{ turno.casilla.estacion.nombre }} · Casilla {{ turno.casilla.numero_casilla }}
+                            </div>
+                            <div class="small text-muted">
+                                Desde {{ turno.fecha_hora_apertura|date:"d/m/Y H:i" }}
+                            </div>
+                            <form method="post"
+                                  action="{% url 'empleado_cerrar_turno' emp.pk turno.id_turno %}"
+                                  class="mt-2"
+                                  onsubmit="return confirm('¿Cerrar este turno?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    Cerrar turno
+                                </button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="small text-muted">Sin turnos abiertos</div>
+                    {% endif %}
+                </td>
                 <td class="text-end">
                     {# Pasamos emp.pk (el legajo) para que la URL sepa a qué empleado se refiere #}
                     <a href="{% url 'empleado_editar' emp.pk %}" class="btn btn-sm btn-outline-primary">Modificar</a>
