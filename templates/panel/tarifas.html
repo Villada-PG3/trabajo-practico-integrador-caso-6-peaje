@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tarifas de vehículos{% endblock %}
+
+{% block content %}
+<a href="/prueba/" class="text-decoration-none">&larr; Volver al panel</a>
+<div class="my-3">
+    <h1 class="h3 mb-1"><i class="fa-solid fa-tags me-2"></i>Tarifas de vehículos</h1>
+    <p class="text-muted mb-0">Actualizá el precio vigente de cada categoría. Los cambios conservan el historial de tarifas.</p>
+</div>
+
+{% if messages %}
+<ul class="messages list-unstyled" aria-live="polite">
+    {% for message in messages %}
+    <li class="{{ message.tags }}">{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th scope="col">Vehículo</th>
+                <th scope="col">Tarifa vigente</th>
+                <th scope="col">Vigente desde</th>
+                <th scope="col">Actualizar precio</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for categoria in categorias %}
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center gap-3">
+                        {% if categoria.id_categoria == 1 %}
+                        <img class="peaje-icono-vehiculo" src="{% static 'Downloads.Moto.png' %}" alt="">
+                        {% elif categoria.id_categoria == 2 %}
+                        <img class="peaje-icono-vehiculo" src="{% static 'autp.png' %}" alt="">
+                        {% elif categoria.id_categoria == 3 %}
+                        <img class="peaje-icono-vehiculo" src="{% static 'Ejes2.png' %}" alt="">
+                        {% elif categoria.id_categoria == 4 %}
+                        <img class="peaje-icono-vehiculo" src="{% static 'ejes3o4.png' %}" alt="">
+                        {% elif categoria.id_categoria == 5 %}
+                        <img class="peaje-icono-vehiculo" src="{% static 'ejes3o4-2.png' %}" alt="">
+                        {% elif categoria.id_categoria == 6 %}
+                        <img class="peaje-icono-vehiculo" src="{% static 'ejes5o6.png' %}" alt="">
+                        {% elif categoria.id_categoria == 7 %}
+                        <img class="peaje-icono-vehiculo" src="{% static '+6.png' %}" alt="">
+                        {% endif %}
+                        <span class="fw-bold">{{ categoria.nombre }}</span>
+                    </div>
+                </td>
+                <td>
+                    {% if categoria.tarifa_actual %}
+                    <span class="peaje-stat-numero">${{ categoria.tarifa_actual.monto }}</span>
+                    {% else %}
+                    <span class="text-muted">Sin tarifa vigente</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if categoria.tarifa_actual %}
+                    {{ categoria.tarifa_actual.vigente_desde|date:"d/m/Y" }}
+                    {% else %}
+                    &mdash;
+                    {% endif %}
+                </td>
+                <td>
+                    <form method="post" action="{% url 'tarifa_actualizar' categoria.id_categoria %}"
+                          class="d-flex align-items-start gap-2">
+                        {% csrf_token %}
+                        <div>
+                            <label class="visually-hidden" for="monto-{{ categoria.id_categoria }}">
+                                Nuevo precio para {{ categoria.nombre }}
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input
+                                    id="monto-{{ categoria.id_categoria }}"
+                                    name="monto"
+                                    type="number"
+                                    class="form-control"
+                                    min="0.01"
+                                    max="99999999.99"
+                                    step="0.01"
+                                    value="{{ categoria.tarifa_actual.monto|default_if_none:'' }}"
+                                    placeholder="0.00"
+                                    required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success text-nowrap">
+                            Guardar
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center text-muted py-4">
+                    No hay categorías de vehículos cargadas.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

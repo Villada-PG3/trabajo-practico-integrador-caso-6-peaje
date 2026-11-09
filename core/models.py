@@ -6,6 +6,7 @@ from django.utils import timezone
 class Ruta(models.Model):
     id_ruta = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)
+    ramal = models.CharField(max_length=100, blank=True, default="")
  
     class Meta:
         db_table = "ruta"

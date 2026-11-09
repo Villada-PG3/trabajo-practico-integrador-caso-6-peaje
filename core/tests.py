@@ -2,6 +2,7 @@ import json
 from datetime import timedelta
 from decimal import Decimal
 
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -18,6 +19,27 @@ from .models import (
     Venta,
     VentaModificacion,
 )
+
+
+class DatosInicialesFixtureTests(TestCase):
+    def test_loaddata_carga_rutas_estaciones_y_casillas_idempotentemente(self):
+        call_command("loaddata", "categorias_vehiculos", verbosity=0)
+        call_command("loaddata", "categorias_vehiculos", verbosity=0)
+
+        self.assertEqual(CategoriaVehiculo.objects.count(), 7)
+        self.assertEqual(Tarifa.objects.count(), 7)
+        self.assertEqual(Ruta.objects.count(), 4)
+        self.assertEqual(Estacion.objects.count(), 17)
+        self.assertEqual(Casilla.objects.count(), 19)
+
+        ruta = Ruta.objects.get(nombre="Tren de las Sierras")
+        self.assertEqual(ruta.ramal, "Ramal A1 (Córdoba)")
+        estacion = Estacion.objects.get(ruta=ruta, numero_estacion=6)
+        self.assertEqual(estacion.nombre, "Capilla del Monte")
+        self.assertEqual(estacion.kilometro, Decimal("154.00"))
+        self.assertTrue(
+            Casilla.objects.filter(estacion=estacion, numero_casilla=106).exists()
+        )
 
 
 class AperturaTurnoTests(TestCase):
@@ -405,3 +427,119 @@ class EstadisticasTests(TestCase):
 
         self.assertEqual(respuesta_pagina.status_code, 403)
         self.assertEqual(respuesta_api.status_code, 403)
+
+
+class TarifasAdminTests(TestCase):
+    def setUp(self):
+        admin = Operador.objects.create(
+            legajo=980,
+            nombre="Admin",
+            apellido="Tarifas",
+            es_administrador=True,
+        )
+        self.client.force_login(admin)
+        self.categoria = CategoriaVehiculo.objects.create(nombre="Automóviles")
+        self.tarifa_anterior = Tarifa.objects.create(
+            categoria=self.categoria,
+            monto="90.00",
+            vigente_desde=timezone.localdate() - timedelta(days=30),
+        )
+        for numero, nombre in (
+            (2, "Autos"),
+            (3, "Dos ejes"),
+            (4, "Tres o cuatro ejes"),
+            (5, "Tres o cuatro ejes duales"),
+            (6, "Cinco o seis ejes"),
+            (7, "Más de seis ejes"),
+        ):
+            CategoriaVehiculo.objects.create(
+                id_categoria=numero,
+                nombre=nombre,
+            )
+
+    def test_pagina_tarifas_muestra_precios_y_logos_de_vehiculos(self):
+        respuesta = self.client.get(reverse("tarifas"))
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "Automóviles")
+        self.assertContains(respuesta, "$90.00")
+        self.assertContains(respuesta, "Downloads.Moto.png")
+        self.assertContains(respuesta, "autp.png")
+        self.assertContains(respuesta, "Ejes2.png")
+        self.assertContains(respuesta, "ejes3o4.png")
+        self.assertContains(respuesta, "ejes3o4-2.png")
+        self.assertContains(respuesta, "ejes5o6.png")
+        self.assertContains(respuesta, "%2B6.png")
+
+    def test_actualizar_tarifa_crea_nueva_vigencia_y_conserva_la_anterior(self):
+        respuesta = self.client.post(
+            reverse("tarifa_actualizar", args=[self.categoria.id_categoria]),
+            {"monto": "125.50"},
+        )
+
+        hoy = timezone.localdate()
+        self.assertRedirects(respuesta, reverse("tarifas"))
+        self.tarifa_anterior.refresh_from_db()
+        self.assertEqual(self.tarifa_anterior.vigente_hasta, hoy - timedelta(days=1))
+        tarifa_nueva = Tarifa.objects.get(categoria=self.categoria, vigente_desde=hoy)
+        self.assertEqual(tarifa_nueva.monto, Decimal("125.50"))
+
+    def test_actualizar_tarifa_iniciada_hoy_no_crea_otra_vigencia(self):
+        hoy = timezone.localdate()
+        self.tarifa_anterior.vigente_hasta = hoy - timedelta(days=1)
+        self.tarifa_anterior.save(update_fields=["vigente_hasta"])
+        tarifa_hoy = Tarifa.objects.create(
+            categoria=self.categoria,
+            monto="100.00",
+            vigente_desde=hoy,
+        )
+
+        respuesta = self.client.post(
+            reverse("tarifa_actualizar", args=[self.categoria.id_categoria]),
+            {"monto": "110.00"},
+        )
+
+        self.assertRedirects(respuesta, reverse("tarifas"))
+        tarifa_hoy.refresh_from_db()
+        self.assertEqual(tarifa_hoy.monto, Decimal("110.00"))
+        self.assertEqual(
+            Tarifa.objects.filter(categoria=self.categoria, vigente_desde=hoy).count(),
+            1,
+        )
+
+    def test_operador_no_puede_acceder_ni_modificar_tarifas(self):
+        operador = Operador.objects.create(
+            legajo=981,
+            nombre="Operador",
+            apellido="Común",
+        )
+        self.client.force_login(operador)
+
+        respuesta_pagina = self.client.get(reverse("tarifas"))
+        respuesta_cambio = self.client.post(
+            reverse("tarifa_actualizar", args=[self.categoria.id_categoria]),
+            {"monto": "200.00"},
+        )
+
+        self.assertEqual(respuesta_pagina.status_code, 403)
+        self.assertEqual(respuesta_cambio.status_code, 403)
+        self.assertFalse(
+            Tarifa.objects.filter(
+                categoria=self.categoria,
+                vigente_desde=timezone.localdate(),
+            ).exists()
+        )
+
+    def test_tarifa_rechaza_precio_invalido(self):
+        respuesta = self.client.post(
+            reverse("tarifa_actualizar", args=[self.categoria.id_categoria]),
+            {"monto": "-5"},
+        )
+
+        self.assertRedirects(respuesta, reverse("tarifas"))
+        self.assertFalse(
+            Tarifa.objects.filter(
+                categoria=self.categoria,
+                vigente_desde=timezone.localdate(),
+            ).exists()
+        )
