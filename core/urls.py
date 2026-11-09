@@ -64,6 +64,8 @@ urlpatterns = [
     path('panel/casillas/<int:pk>/borrar/', views.CasillaDeleteView.as_view(), name='casilla_borrar'),
         # Lista de empleados
     path('panel/empleados/', views.EmpleadoListView.as_view(), name='empleados'),
+    path('panel/tarifas/', views.tarifas_admin_view, name='tarifas'),
+    path('panel/tarifas/<int:categoria_id>/actualizar/', views.tarifa_actualizar_view, name='tarifa_actualizar'),
     path('panel/estadisticas/', views.estadisticas_view, name='estadisticas'),
     path('api/estadisticas/casilla/', views.api_estadisticas_casilla, name='api-estadisticas-casilla'),
     path('api/estadisticas/empleado/', views.api_estadisticas_empleado, name='api-estadisticas-empleado'),

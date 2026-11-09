@@ -351,6 +351,12 @@ h2, .peaje-app h2.h5 {
     object-position: left center;
 }
 
+.peaje-app .table .peaje-icono-vehiculo {
+    flex-basis: 5.5rem;
+    max-width: 5.5rem;
+    height: 3rem;
+}
+
 .peaje-nombre-categoria {
     max-width: 70%;
     text-align: left;

@@ -14,7 +14,7 @@ pip install -r requirements.txt
 # Crear las tablas
 python manage.py migrate
 
-# Cargar categorías de vehículos y tarifas
+# Cargar categorías, tarifas, rutas, estaciones y casillas
 python manage.py loaddata categorias_vehiculos
 
 # 4. Crear el SUPERUSUARIO

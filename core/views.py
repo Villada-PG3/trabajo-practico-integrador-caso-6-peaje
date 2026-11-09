@@ -6,9 +6,10 @@ from functools import wraps
 
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.db import transaction
 from django.db.models import Count, Prefetch, Q, Sum
-from django.http import HttpResponseForbidden, JsonResponse
+from django.http import HttpResponseForbidden, HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
@@ -684,6 +685,74 @@ class SoloAdminMixin(UserPassesTestMixin):
     # Django corre esto antes de ejecutar la vista; si devuelve False, la bloquea
         u = self.request.user
         return u.is_authenticated and u.es_administrador
+
+
+class TarifaMontoForm(forms.Form):
+    monto = forms.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        min_value=Decimal("0.01"),
+        label="Precio",
+    )
+
+
+def _categorias_con_tarifa_actual():
+    hoy = timezone.localdate()
+    categorias = CategoriaVehiculo.objects.order_by("id_categoria")
+    for categoria in categorias:
+        categoria.tarifa_actual = _tarifa_vigente(categoria.id_categoria, hoy)
+    return categorias
+
+
+def tarifas_admin_view(request):
+    if not request.user.is_authenticated:
+        return redirect("login")
+    if not request.user.es_administrador:
+        return HttpResponseForbidden("No autorizado")
+    if request.method != "GET":
+        return HttpResponseNotAllowed(["GET"])
+    return render(
+        request,
+        "panel/tarifas.html",
+        {"categorias": _categorias_con_tarifa_actual()},
+    )
+
+
+def tarifa_actualizar_view(request, categoria_id):
+    if not request.user.is_authenticated:
+        return redirect("login")
+    if not request.user.es_administrador:
+        return HttpResponseForbidden("No autorizado")
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    categoria = get_object_or_404(CategoriaVehiculo, pk=categoria_id)
+    form = TarifaMontoForm(request.POST)
+    if not form.is_valid():
+        errores = "; ".join(
+            error for error_list in form.errors.values() for error in error_list
+        )
+        messages.error(request, f"No se pudo actualizar {categoria.nombre}: {errores}")
+        return redirect("tarifas")
+
+    hoy = timezone.localdate()
+    with transaction.atomic():
+        tarifa_actual = _tarifa_vigente(categoria.id_categoria, hoy)
+        if tarifa_actual and tarifa_actual.vigente_desde == hoy:
+            tarifa_actual.monto = form.cleaned_data["monto"]
+            tarifa_actual.save(update_fields=["monto"])
+        else:
+            if tarifa_actual:
+                tarifa_actual.vigente_hasta = hoy - timedelta(days=1)
+                tarifa_actual.save(update_fields=["vigente_hasta"])
+            Tarifa.objects.create(
+                categoria=categoria,
+                monto=form.cleaned_data["monto"],
+                vigente_desde=hoy,
+            )
+
+    messages.success(request, f"Tarifa de {categoria.nombre} actualizada correctamente.")
+    return redirect("tarifas")
 
 
 class BootstrapFormMixin:
