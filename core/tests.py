@@ -218,6 +218,77 @@ class VentasTurnoTests(TestCase):
         self.assertEqual(modificacion.patente_nueva, "AB456CD")
 
 
+class DatosEstacionTicketTests(TestCase):
+    def setUp(self):
+        operador = Operador.objects.create(
+            legajo=457,
+            nombre="Lucía",
+            apellido="Cajera",
+        )
+        self.client.force_login(operador)
+
+        ruta = Ruta.objects.get(nombre="Ruta 20")
+        estacion = Estacion.objects.create(
+            ruta=ruta,
+            nombre="Estación Test",
+            numero_estacion=7,
+            kilometro="59.20",
+        )
+        casilla = Casilla.objects.create(estacion=estacion, numero_casilla=2)
+        ahora = timezone.now()
+        self.turno = Turno.objects.create(
+            casilla=casilla,
+            operador=operador,
+            sentido_cobro=SentidoCobro.NORTE_SUR,
+            monto_cambio_inicial="5000.00",
+            inicio_programado=ahora,
+            fin_programado=ahora + timedelta(hours=8),
+            fecha_hora_apertura=ahora,
+        )
+        self.categoria = CategoriaVehiculo.objects.create(nombre="Automóviles")
+        Tarifa.objects.create(
+            categoria=self.categoria,
+            monto="90.00",
+            vigente_desde=timezone.localdate(),
+        )
+
+    def test_api_ventas_y_turno_actual_incluyen_datos_de_estacion_en_ticket(self):
+        respuesta_venta = self.client.post(
+            reverse("api-ventas"),
+            data=json.dumps({"categoria_id": self.categoria.id_categoria}),
+            content_type="application/json",
+        )
+
+        self.assertEqual(respuesta_venta.status_code, 201)
+        datos_venta = respuesta_venta.json()
+        self.assertEqual(datos_venta["estacion_nombre"], "Estación Test")
+        self.assertEqual(datos_venta["estacion_numero"], 7)
+        self.assertEqual(datos_venta["ruta_nombre"], "Ruta 20")
+        self.assertEqual(datos_venta["kilometro"], "59.2")
+        self.assertTrue(datos_venta["ticket"].startswith("0007-"))
+
+        respuesta_turno = self.client.get(reverse("api-turno-actual"))
+
+        self.assertEqual(respuesta_turno.status_code, 200)
+        datos_turno = respuesta_turno.json()["turno"]
+        self.assertEqual(datos_turno["estacion_nombre"], "Estación Test")
+        self.assertEqual(datos_turno["estacion_numero"], 7)
+        self.assertEqual(datos_turno["ruta_nombre"], "Ruta 20")
+        self.assertEqual(datos_turno["kilometro"], "59.2")
+        self.assertTrue(
+            respuesta_turno.json()["ventas"][0]["ticket"].startswith("0007-")
+        )
+
+    def test_paginas_no_muestran_datos_fijos_de_estacion(self):
+        respuesta_cobro = self.client.get(reverse("cobro"))
+        respuesta_cierre = self.client.get(reverse("cierre_caja"))
+
+        self.assertNotContains(respuesta_cobro, "Km 18")
+        self.assertNotContains(respuesta_cobro, "N° 04")
+        self.assertNotContains(respuesta_cierre, "Km 18")
+        self.assertNotContains(respuesta_cierre, "N° 04")
+
+
 class EmpleadoTurnoAdminTests(TestCase):
     def setUp(self):
         admin = Operador.objects.create(
@@ -414,7 +485,10 @@ class EstadisticasTests(TestCase):
             {item["motivo"] for item in datos["correcciones"]},
             {"Corrección inicial", "Segunda corrección"},
         )
-        self.assertEqual(datos["correcciones"][0]["ticket"], f"0004-{self.venta.pk:06d}")
+        self.assertEqual(
+            datos["correcciones"][0]["ticket"],
+            f"{self.casilla.estacion.numero_estacion:04d}-{self.venta.pk:06d}",
+        )
 
     def test_estadisticas_requieren_permisos_de_administrador(self):
         self.client.force_login(self.empleado)

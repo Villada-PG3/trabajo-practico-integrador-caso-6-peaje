@@ -210,6 +210,10 @@ async function emitirTicket(idCategoria) {
     const importe = parseFloat(venta.importe);
 
     // Rellenar Modal del Ticket con los datos que confirmó el servidor
+    document.getElementById('tkn-estacion-nombre').textContent = venta.estacion_nombre;
+    document.getElementById('tkn-estacion-numero').textContent = String(venta.estacion_numero).padStart(2, '0');
+    document.getElementById('tkn-ruta').textContent = venta.ruta_nombre;
+    document.getElementById('tkn-km').textContent = venta.kilometro;
     document.getElementById('tkn-numero').textContent = venta.ticket;
     document.getElementById('tkn-fecha').textContent = new Date(venta.fecha_hora_emision).toLocaleString();
     document.getElementById('tkn-categoria').textContent = venta.categoria;

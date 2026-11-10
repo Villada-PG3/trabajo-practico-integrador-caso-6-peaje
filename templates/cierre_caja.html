@@ -18,7 +18,7 @@
                 <div class="row mb-3 border-bottom pb-3">
                     <div class="col-6">
                         <p class="mb-1"><strong>Operador Legajo:</strong> <span id="cr-legajo">---</span></p>
-                        <p class="mb-1"><strong>Estación:</strong> Ruta 20 - Km 18</p>
+                        <p class="mb-1"><strong>Estación:</strong> <span id="cr-estacion">---</span></p>
                         <p class="mb-1"><strong>Casilla N°:</strong> <span id="cr-casilla">01</span></p>
                     </div>
                     <div class="col-6 text-end">
@@ -157,6 +157,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         tarifasVigentes = tarifasRes.data.tarifas;
         document.getElementById('cr-legajo').textContent = turno.legajo;
         document.getElementById('cr-casilla').textContent = turno.casilla_numero;
+        document.getElementById('cr-estacion').textContent =
+            `${turno.estacion_nombre} (N° ${String(turno.estacion_numero).padStart(2, '0')}) - ${turno.ruta_nombre} Km ${turno.kilometro}`;
         document.getElementById('cr-apertura').textContent =
             new Date(turno.fecha_hora_apertura).toLocaleString();
         document.getElementById('cr-cierre').textContent = new Date().toLocaleString();
