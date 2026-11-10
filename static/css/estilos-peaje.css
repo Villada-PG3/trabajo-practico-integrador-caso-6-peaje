@@ -693,3 +693,20 @@ h2, .peaje-app h2.h5 {
         box-shadow: none !important;
     }
 }
+
+@media print {
+    .peaje-app .card,
+    .peaje-app .modal-content {
+        overflow: visible !important;
+        box-shadow: none !important;
+        border: 0 !important;
+    }
+    .modal-backdrop { display: none !important; }
+    .modal-dialog {
+        display: block !important;
+        min-height: 0 !important;
+        max-width: none !important;
+        margin: 0 !important;
+        transform: none !important;
+    }
+}

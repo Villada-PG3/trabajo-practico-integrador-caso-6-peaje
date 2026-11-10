@@ -190,7 +190,7 @@ def _leer_json(request):
 def _turno_abierto(operador):
     """Turno actualmente abierto del operador (o None)."""
     return (
-        Turno.objects.select_related("casilla__estacion", "operador")
+        Turno.objects.select_related("casilla__estacion__ruta", "operador")
         .filter(
             operador=operador,
             fecha_hora_apertura__isnull=False,
@@ -213,7 +213,17 @@ def _tarifa_vigente(categoria_id, hoy):
 
 
 def _numero_ticket(venta):
-    return f"0004-{venta.numero_ticket:06d}"
+    return f"{venta.turno.casilla.estacion.numero_estacion:04d}-{venta.numero_ticket:06d}"
+
+
+def _datos_estacion(casilla):
+    e = casilla.estacion
+    return {
+        "estacion_nombre": e.nombre,
+        "estacion_numero": e.numero_estacion,
+        "ruta_nombre": e.ruta.nombre,
+        "kilometro": format(e.kilometro.normalize(), "f"),
+    }
 
 
 def _turno_a_dict(turno):
@@ -229,6 +239,7 @@ def _turno_a_dict(turno):
         "fecha_hora_cierre": (
             turno.fecha_hora_cierre.isoformat() if turno.fecha_hora_cierre else None
         ),
+        **_datos_estacion(turno.casilla),
     }
 
 
@@ -273,7 +284,9 @@ def _ventas_turno(turno):
     return [
         _venta_a_dict(venta)
         for venta in (
-            Venta.objects.select_related("tarifa__categoria")
+            Venta.objects.select_related(
+                "tarifa__categoria", "turno__casilla__estacion"
+            )
             .filter(turno=turno)
             .order_by("numero_ticket")
         )
@@ -297,7 +310,9 @@ def api_turno_abrir(request):
         return JsonResponse({"detail": "Ruta inválida"}, status=400)
 
     try:
-        casilla = Casilla.objects.select_related("estacion").get(pk=int(data.get("casilla_id")))
+        casilla = Casilla.objects.select_related("estacion__ruta").get(
+            pk=int(data.get("casilla_id"))
+        )
     except (TypeError, ValueError, Casilla.DoesNotExist):
         return JsonResponse({"detail": "Casilla inválida"}, status=400)
 
@@ -441,6 +456,7 @@ def api_ventas(request):
             "patente": venta.patente_detectada or "S/PATENTE",
             "casilla_numero": turno.casilla.numero_casilla,
             "legajo": turno.operador_id,
+            **_datos_estacion(turno.casilla),
         },
         status=201,
     )
@@ -479,10 +495,9 @@ def api_venta_editar(request, venta_id):
         )
 
     try:
-        venta = Venta.objects.select_related("tarifa__categoria").get(
-            pk=venta_id,
-            turno=turno,
-        )
+        venta = Venta.objects.select_related(
+            "tarifa__categoria", "turno__casilla__estacion"
+        ).get(pk=venta_id, turno=turno)
     except Venta.DoesNotExist:
         return JsonResponse({"detail": "La venta no pertenece al turno abierto"}, status=404)
 
@@ -649,7 +664,7 @@ def api_estadisticas_empleado(request):
         }
         for modificacion in (
             VentaModificacion.objects.filter(operador=empleado)
-            .select_related("venta__turno__casilla")
+            .select_related("venta__turno__casilla__estacion")
             .order_by("-fecha_hora", "-id")
         )
     ]
