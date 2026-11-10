@@ -11,15 +11,15 @@ source venv/bin/activate
 # 3. Instalar las dependencias
 pip install -r requirements.txt
 
-# Crear las tablas
+# 4. Crear las tablas
 python manage.py migrate
 
-# Cargar categorías, tarifas, rutas, estaciones y casillas
+# 5. Cargar categorías, tarifas, rutas, estaciones y casillas
 python manage.py loaddata categorias_vehiculos
 
-# 4. Crear el SUPERUSUARIO
+# 6. Crear el SUPERUSUARIO
 python manage.py createsuperuser
 
-# 5.
+# 7. Iniciar servidor web
 
 python manage.py runserver
