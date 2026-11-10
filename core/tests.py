@@ -23,8 +23,8 @@ from .models import (
 
 class DatosInicialesFixtureTests(TestCase):
     def test_loaddata_carga_rutas_estaciones_y_casillas_idempotentemente(self):
-        call_command("loaddata", "categorias_vehiculos", verbosity=0)
-        call_command("loaddata", "categorias_vehiculos", verbosity=0)
+        call_command("loaddata", "Data-Fija", verbosity=0)
+        call_command("loaddata", "Data-Fija", verbosity=0)
 
         self.assertEqual(CategoriaVehiculo.objects.count(), 7)
         self.assertEqual(Tarifa.objects.count(), 7)

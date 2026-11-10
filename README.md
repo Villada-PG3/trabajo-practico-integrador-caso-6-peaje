@@ -15,7 +15,7 @@ pip install -r requirements.txt
 python manage.py migrate
 
 # 5. Cargar categorías, tarifas, rutas, estaciones y casillas
-python manage.py loaddata categorias_vehiculos
+python manage.py loaddata Data-Fija
 
 # 6. Crear el SUPERUSUARIO
 python manage.py createsuperuser
